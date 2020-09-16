@@ -1,0 +1,19 @@
+{
+  "name": "superfine-hooks",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "snowpack dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "superfine": "^8.0.10"
+  },
+  "devDependencies": {
+    "snowpack": "^2.10.1"
+  }
+}
