@@ -5,13 +5,18 @@ const counterActions = {
   add: (state, value) => ({...state, counter: state.counter + value}),
 }
 
-function CounterLocalState2(state) {
+function Counter(state) {
   return <div>
     <h3>Counter {state.name} is: {state.counter}</h3>
     <button onclick={counterActions.inc}>INC</button>
     <button onclick={[counterActions.add, 3]}>+3</button>
     <button onclick={[counterActions.add, -3]}>-3</button>
   </div>
+}
+
+Counter.$init = {
+  name: "<no name>",
+  counter: 0,
 }
 
 function Test() {
@@ -58,9 +63,9 @@ function Main(s) {
       <h3>Counter is: {s.counter}</h3>
       <button onclick={mainActions.toggleShow1WithDelay}>Toggle 1 with delay</button>
 
-      { s.show1 && <CounterLocalState2 $mp={mpCounter1} $init={({name: "FIRST", counter: 0})} />}
+      { s.show1 && <Counter $mp={mpCounter1} $init={({name: "FIRST", counter: 0})} />}
       <button onclick={mainActions.toggleShow1}>Toggle 1</button>
-      { s.show2 && <CounterLocalState2 $mp="c2" $init={({name: "SECOND", counter: 10})}/>}
+      { s.show2 && <Counter $mp="c2"/>}
       <button onclick={mainActions.toggleShow2}>Toggle 2</button>
     </div>
 }

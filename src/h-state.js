@@ -3,6 +3,7 @@ import { patch, h as hsf, text} from 'superfine'
 const isArray = Array.isArray
 const isFunction = obj => typeof(obj) === "function"
 const isString = obj => typeof(obj) === "string"
+const isUndefined = obj => typeof(obj) === "undefined"
 
 // change could be one of the following (it is assumed that state cannot be function):
 // func
@@ -20,7 +21,7 @@ function applyChange(fstate, setState, change, changePayload) {
         : (setState(change[0]),
            change
             .slice(1)
-            .forEach(fx => fx && fx !== true && fx[0](fstate, fx[1]))
+            .forEach(fx => isArray(fx) && isFunction(fx[0]) && fx[0](fstate, fx[1]))
           )
       : setState(change)
 }
@@ -53,7 +54,7 @@ function mapState(parent, mp, init) {
     let state = parent(), r;
     return isString(mp)
       ? (mp in state) ? state[mp] : init
-      : (r = mp.get(state), typeof(r) === "undefined" ? init : r)
+      : (r = mp.get(state), isUndefined(r) ? init : r)
   }
 
   function mapSet(state, value) {
@@ -63,15 +64,18 @@ function mapState(parent, mp, init) {
       : mp.set(state, value)
   }
 
-  const setState = (newState) => (getState() !== newState) && parent([mapSet, newState])
   return function mappedState() {
     return arguments.length == 0 
       ? getState()
-      : applyChange(mappedState, setState, arguments[0], arguments[1])
+      : applyChange(
+          mappedState, 
+          (newState) => (getState() !== newState) && parent([mapSet, newState]),
+          arguments[0],
+          arguments[1])
   }
 }
 
-export const mount = (get, set) => ({get, set})
+export var mount = (get, set) => ({get, set})
 
 let currentFState = undefined
 
@@ -87,7 +91,7 @@ function withState(mp, init, user) {
 
 const MountPointProp = "$mp"
 const InitStateProp = "$init"
-export function h (type, props, ...children) {
+export var h = (type, props, ...children) => {
   return isFunction(type)
     ? props && (MountPointProp in props) 
       ? withState(props[MountPointProp], props[InitStateProp] || type[InitStateProp], state => type(state, children))
@@ -117,7 +121,7 @@ function hookEvents(vnode, fstate) {
     vnode)  
 }
 
-export function app({node, view, init, stateChanged, beforeRender}) {
+export var app = ({node, view, init, stateChanged, beforeRender}) => {
   let rendering = false
   let appState = newState(state => {
     stateChanged && stateChanged(state)
@@ -141,6 +145,4 @@ export function app({node, view, init, stateChanged, beforeRender}) {
   return appState
 }
 
-var defer = typeof requestAnimationFrame !== "undefined"
-    ? requestAnimationFrame
-    : setTimeout
+var defer = isUndefined(requestAnimationFrame) ? setTimeout :  requestAnimationFrame

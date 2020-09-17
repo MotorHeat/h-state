@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "snowpack dev",
     "bundle": "esbuild --bundle --minify --outfile=bundle.js ./src/h-state.js",
-    "minify": "terser ./src/h-state.js -o h-state.js -mc --source-map url=$out.map --module"
+    "minify": "terser ./src/h-state.js -o h-state.js -mc --module"
   },
   "keywords": [],
   "author": "",
