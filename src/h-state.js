@@ -34,17 +34,16 @@ function newState(stateChanged) {
       readOnly = true
       try {
         state = newState
-        stateChanged && stateChanged(fstate)
+        stateChanged && stateChanged(state)
       } finally {
         readOnly = false
       }
     }
   }
-  function fstate() { 
+  return function fstate() { 
     if (arguments.length == 0) return state
     applyChange(fstate, setState, arguments[0], arguments[1])
   }
-  return fstate
 }
 
 function mapState(parent, mp, initial) {
@@ -115,26 +114,26 @@ function hookEvents(vnode, fstate) {
 
 export function app({node, view, init, stateChanged, beforeRender}) {
   let rendering = false
-  let result = newState(fstate => {
-    stateChanged && stateChanged(fstate())
+  let appState = newState(state => {
+    stateChanged && stateChanged(state)
     if (!rendering) {
       rendering = true;
       defer(() => {
+        rendering = false
         if (currentFState) throw new Error("Render race condition")
-        beforeRender && beforeRender(fstate)
-        currentFState = fstate
+        beforeRender && beforeRender(appState)
+        currentFState = appState
         try {
           let vnode = h(view, {$mp: "$root", $init: init})
           patch(node, vnode)
         } finally {
           currentFState = undefined
         }
-        rendering = false
       })
     }
   })
-  result({$root: init})
-  return result
+  appState({$root: init})
+  return appState
 }
 
 var defer = typeof requestAnimationFrame !== "undefined"
