@@ -1,4 +1,4 @@
-import { h, app } from './h-state'
+import { h, app, mount } from './h-state'
 
 const counterActions = {
   inc: state => ({...state, counter: state.counter + 1}),
@@ -24,7 +24,15 @@ function Test() {
 const mainActions = {
   toggleShow1: s => ({...s, show1: !s.show1}),
   toggleShow2: s => ({...s, show2: !s.show2}),
-  toggleShow1WithDelay: s => [s, timeoutEffect(1000, mainActions.toggleShow1)]
+  toggleShow1WithDelay: s => [s, timeoutEffect(1000, mainActions.toggleShow1)],
+  injectCounter1: (s, v) => [
+    {...s, c1: v},
+    logEffect("State of counter 1 injected")
+  ]
+}
+
+function logEffect(message) {
+  return [ (d, m) => console.log(m), message]
 }
 
 function timeoutEffect(interval, action, payload) {
@@ -42,6 +50,7 @@ function timeOutEffectRunner(fstate, {action, payload, interval}) {
   setTimeout( () => fstate(action, payload), interval)
 }
 
+const mpCounter1 = mount( s => s.c1, mainActions.injectCounter1 );
 
 function Main(s) {
     return <div>
@@ -49,7 +58,7 @@ function Main(s) {
       <h3>Counter is: {s.counter}</h3>
       <button onclick={mainActions.toggleShow1WithDelay}>Toggle 1 with delay</button>
 
-      { s.show1 && <CounterLocalState2 $mp="c1" $init={({name: "FIRST", counter: 0})} />}
+      { s.show1 && <CounterLocalState2 $mp={mpCounter1} $init={({name: "FIRST", counter: 0})} />}
       <button onclick={mainActions.toggleShow1}>Toggle 1</button>
       { s.show2 && <CounterLocalState2 $mp="c2" $init={({name: "SECOND", counter: 10})}/>}
       <button onclick={mainActions.toggleShow2}>Toggle 2</button>

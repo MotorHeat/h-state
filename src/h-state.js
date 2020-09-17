@@ -2,6 +2,7 @@ import { patch, h as hsf, text} from 'superfine'
 
 const isArray = Array.isArray
 const isFunction = obj => typeof(obj) === "function"
+const isString = obj => typeof(obj) === "string"
 
 // change could be one of the following (it is assumed that state cannot be function):
 // func
@@ -46,26 +47,31 @@ function newState(stateChanged) {
   }
 }
 
-function mapState(parent, mp, initial) {
+function mapState(parent, mp, init) {
+
   function getState() {
-    let state = parent()
-    return (mp in state) ? state[mp] : initial
+    let state = parent(), r;
+    return isString(mp)
+      ? (mp in state) ? state[mp] : init
+      : (r = mp.get(state), typeof(r) === "undefined" ? init : r)
   }
-  function setState(newState) {
-    if (getState() !== newState) {
-      parent(parentState => {
-        let result = {...parentState}
-        result[mp] = newState
-        return result
-      })
-    }
+
+  function mapSet(state, value) {
+    let r
+    return isString(mp)
+      ? (r = {...state}, r[mp] = value, r)
+      : mp.set(state, value)
   }
+
+  const setState = (newState) => (getState() !== newState) && parent([mapSet, newState])
   return function mappedState() {
     return arguments.length == 0 
       ? getState()
       : applyChange(mappedState, setState, arguments[0], arguments[1])
   }
 }
+
+export const mount = (get, set) => ({get, set})
 
 let currentFState = undefined
 
@@ -92,8 +98,7 @@ export function h (type, props, ...children) {
           props || {},
           [].concat(...children)
             .filter(c => typeof(c) !== "boolean")
-            .map((any) =>
-              typeof any === "string" || typeof any === "number" ? text(any) : any
+            .map(c => isString(c) || typeof c === "number" ? text(c) : c
             )),
       currentFState)
 }
