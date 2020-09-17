@@ -78,10 +78,11 @@ function mapState(parent, mp, init) {
 export var mount = (get, set) => ({get, set})
 
 let currentFState = undefined
+let rootFState = undefined
 
 function withState(mp, init, user) {
   let old = currentFState
-  currentFState = mapState(currentFState, mp, init)
+  currentFState = mp === "" ? rootFState : mapState(currentFState, mp, init)
   try {
     return user(currentFState())
   } finally {
@@ -129,19 +130,19 @@ export var app = ({node, view, init, stateChanged, beforeRender}) => {
       rendering = true;
       defer(() => {
         rendering = false
-        if (currentFState) throw new Error("Render race condition")
+        if (currentFState || rootFState) throw new Error("Render race condition")
         beforeRender && beforeRender(appState)
-        currentFState = appState
+        rootFState = appState
         try {
-          let vnode = h(view, {$mp: "$root", $init: init})
+          let vnode = h(view, {$mp: "", $init: init})
           patch(node, vnode)
         } finally {
-          currentFState = undefined
+          rootFState = undefined
         }
       })
     }
   })
-  appState({$root: init})
+  appState(init)
   return appState
 }
 

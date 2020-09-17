@@ -1,4 +1,6 @@
 import { h, app, mount } from './h-state'
+import { processSensors } from './h-state-sensors'
+import { startMouseMoveSensor } from './sensors'
 
 const counterActions = {
   inc: state => ({...state, counter: state.counter + 1}),
@@ -33,7 +35,8 @@ const mainActions = {
   injectCounter1: (s, v) => [
     {...s, c1: v},
     logEffect("State of counter 1 injected")
-  ]
+  ],
+  setMouseCursor: (s, v) => ({...s, mouse: {...s.mouse, cursor: v}})
 }
 
 function logEffect(message) {
@@ -60,6 +63,7 @@ const mpCounter1 = mount( s => s.c1, mainActions.injectCounter1 );
 function Main(s) {
     return <div>
       <Test></Test>
+      <MouseCursor $mp="mouse"></MouseCursor>
       <h3>Counter is: {s.counter}</h3>
       <button onclick={mainActions.toggleShow1WithDelay}>Toggle 1 with delay</button>
 
@@ -67,18 +71,41 @@ function Main(s) {
       <button onclick={mainActions.toggleShow1}>Toggle 1</button>
       { s.show2 && <Counter $mp="c2"/>}
       <button onclick={mainActions.toggleShow2}>Toggle 2</button>
+  
     </div>
+}
+
+const mouseCursorActions = {
+  toggleWatch: s => ({...s, watch: !s.watch}),
+}
+
+function MouseCursor({watch, cursor}) {
+  return <div>
+    <p>Active: {watch ? "yes" : "no"}</p>
+    <p>{`Mouse X: ${cursor.x} Y: ${cursor.y}`}</p>
+    <button onclick={mouseCursorActions.toggleWatch}>watch</button>
+  </div>
+}
+
+MouseCursor.$init = {
+  watch: false,
+  cursor: { x: 0, y: 0 },
 }
 
 const startState = {
   counter: 0,
   show1: true,
   show2: true,
+  mouse: MouseCursor.$init,
+  sensors: [
+    startMouseMoveSensor(mainActions.setMouseCursor, s => s.mouse.watch)
+  ]
 }
 
 let fstate = app( {
   node: document.getElementById("app"),
   view: Main,
   init: startState,
-  stateChanged: console.log
+  stateChanged: console.log,
+  beforeRender: processSensors(s => s.sensors)
 })
