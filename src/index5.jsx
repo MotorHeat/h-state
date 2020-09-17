@@ -62,6 +62,9 @@ const startState = {
   show2: true,
 }
 
-let fstate = app(document.getElementById("app"), Main, startState)
-
-
+let fstate = app( {
+  node: document.getElementById("app"),
+  view: Main,
+  init: startState,
+  stateChanged: console.log
+})

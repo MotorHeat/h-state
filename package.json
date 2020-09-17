@@ -1,11 +1,13 @@
 {
-  "name": "superfine-hooks",
+  "name": "h-state",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "snowpack dev"
+    "start": "snowpack dev",
+    "bundle": "esbuild --bundle --minify --outfile=bundle.js ./src/h-state.js",
+    "minify": "terser ./src/h-state.js -o h-state.js -mc --source-map url=$out.map --module"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +16,7 @@
     "superfine": "^8.0.10"
   },
   "devDependencies": {
-    "snowpack": "^2.10.1"
+    "snowpack": "^2.10.1",
+    "terser": "^5.3.1"
   }
 }
