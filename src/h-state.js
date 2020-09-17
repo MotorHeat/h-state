@@ -77,6 +77,7 @@ function mapState(parent, mp, init) {
 }
 
 export var mount = (get, set) => ({get, set})
+export var effect = effect => s => [ s, effect ]
 
 let currentFState = undefined
 let rootFState = undefined

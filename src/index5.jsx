@@ -1,4 +1,4 @@
-import { h, app, mount } from './h-state'
+import { h, app, mount, effect } from './h-state'
 import { processSensors, attachSensorsEffect, detachSensorsEffect} from './h-state-sensors'
 import { MouseCursor, mouseCursorSensors } from './mouseCursor'
 
@@ -79,8 +79,6 @@ const mainActions = {
     detachSensorsEffect(sensors, mainActions.removeSensors)
   ]
 }
-
-const effect = effect => s => [ s, effect ]
 
 const mpCounter1 = mount( s => s.c1, mainActions.injectCounter1 );
 
