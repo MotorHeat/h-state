@@ -1,6 +1,6 @@
 import { h, app, mount } from './h-state'
-import { processSensors } from './h-state-sensors'
-import { startMouseMoveSensor } from './sensors'
+import { processSensors, attachSensorsEffect, detachSensorsEffect} from './h-state-sensors'
+import { MouseCursor, mouseCursorSensors } from './mouseCursor'
 
 const counterActions = {
   inc: state => ({...state, counter: state.counter + 1}),
@@ -28,17 +28,6 @@ function Test() {
   </div>
 }
 
-const mainActions = {
-  toggleShow1: s => ({...s, show1: !s.show1}),
-  toggleShow2: s => ({...s, show2: !s.show2}),
-  toggleShow1WithDelay: s => [s, timeoutEffect(1000, mainActions.toggleShow1)],
-  injectCounter1: (s, v) => [
-    {...s, c1: v},
-    logEffect("State of counter 1 injected")
-  ],
-  setMouseCursor: (s, v) => ({...s, mouse: {...s.mouse, cursor: v}})
-}
-
 function logEffect(message) {
   return [ (d, m) => console.log(m), message]
 }
@@ -58,12 +47,62 @@ function timeOutEffectRunner(fstate, {action, payload, interval}) {
   setTimeout( () => fstate(action, payload), interval)
 }
 
+Main.$init = {
+  counter: 0,
+  show1: true,
+  show2: true,
+  mouse: MouseCursor.$init,
+  sensors: []
+}
+
+const mainActions = {
+  toggleShow1: s => ({...s, show1: !s.show1}),
+  toggleShow2: s => ({...s, show2: !s.show2}),
+  toggleShow1WithDelay: s => [s, timeoutEffect(1000, mainActions.toggleShow1)],
+  injectCounter1: (s, v) => [
+    {...s, c1: v},
+    logEffect("State of counter 1 injected")
+  ],
+  setMouseCursor: (s, v) => ({...s, mouse: {...s.mouse, cursor: v}}),
+  addSensor: (s, sensor) => ({...s, sensors: [...s.sensors, sensor]}),
+  addSensors: (s, sensors) => ({...s, sensors: s.sensors.concat(sensors)}),
+  removeSensor: (s, sensor) => ({...s, sensors: s.sensors.filter(ss => ss !== sensor)}),
+  removeSensors: (s, sensors) => ({...s, sensors: s.sensors.filter(ss => !sensors.includes(ss))}),
+
+  attachSensors: (s, {sensors, mapper}) => [
+    s,
+    attachSensorsEffect(sensors, mapper, mainActions.addSensors)
+  ],
+
+  detachSensors: (s, sensors) => [
+    s,
+    detachSensorsEffect(sensors, mainActions.removeSensors)
+  ]
+}
+
+const effect = effect => s => [ s, effect ]
+
 const mpCounter1 = mount( s => s.c1, mainActions.injectCounter1 );
+
+const attachMouseCursorSensorsEffect = attachSensorsEffect(mouseCursorSensors, 'mouse', mainActions.addSensors)
+const detachMouseCursorSensorsEffect = detachSensorsEffect(mouseCursorSensors, mainActions.removeSensors)
 
 function Main(s) {
     return <div>
       <Test></Test>
       <MouseCursor $mp="mouse"></MouseCursor>
+      <button
+        disabled={s.sensors.length !== 0}
+        // onclick={[mainActions.attachSensors, {sensors: mouseCursorSensors, mapper: 'mouse'}]}>
+        onclick={effect(attachMouseCursorSensorsEffect)}>
+          Attach mouse sensor
+      </button>
+      <button
+        disabled={s.sensors.length === 0}
+        // onclick={[mainActions.detachSensors, mouseCursorSensors]}>
+        onclick={effect(detachMouseCursorSensorsEffect)}>
+          Detach mouse sensor
+      </button>
       <h3>Counter is: {s.counter}</h3>
       <button onclick={mainActions.toggleShow1WithDelay}>Toggle 1 with delay</button>
 
@@ -75,37 +114,10 @@ function Main(s) {
     </div>
 }
 
-const mouseCursorActions = {
-  toggleWatch: s => ({...s, watch: !s.watch}),
-}
-
-function MouseCursor({watch, cursor}) {
-  return <div>
-    <p>Active: {watch ? "yes" : "no"}</p>
-    <p>{`Mouse X: ${cursor.x} Y: ${cursor.y}`}</p>
-    <button onclick={mouseCursorActions.toggleWatch}>watch</button>
-  </div>
-}
-
-MouseCursor.$init = {
-  watch: false,
-  cursor: { x: 0, y: 0 },
-}
-
-const startState = {
-  counter: 0,
-  show1: true,
-  show2: true,
-  mouse: MouseCursor.$init,
-  sensors: [
-    startMouseMoveSensor(mainActions.setMouseCursor, s => s.mouse.watch)
-  ]
-}
-
 let fstate = app( {
   node: document.getElementById("app"),
   view: Main,
-  init: startState,
+  // init: startState,
   stateChanged: console.log,
   beforeRender: processSensors(s => s.sensors)
 })

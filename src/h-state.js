@@ -1,9 +1,10 @@
 import { patch, h as hsf, text} from 'superfine'
+import { isArray, isFunction, isString, isUndefined } from './utils'
 
-const isArray = Array.isArray
-const isFunction = obj => typeof(obj) === "function"
-const isString = obj => typeof(obj) === "string"
-const isUndefined = obj => typeof(obj) === "undefined"
+export function bindToState(action, mapper, fstate) {
+  let mappedState = mapState(fstate, mapper)
+  return (_, payload) => (mappedState([action, payload]), fstate())
+}
 
 // change could be one of the following (it is assumed that state cannot be function):
 // func
@@ -116,9 +117,9 @@ function hookEvents(vnode, fstate) {
     .map(p => [vnode.props[p], p])
     .forEach(([action, p]) => 
         vnode.props[p] = (e) => 
-        isArray(action)
-          ? fstate(action[0], isFunction(action[1]) ? action[1](e) : action[1])
-          : fstate(action)),
+          isArray(action)
+            ? fstate(action[0], isFunction(action[1]) ? action[1](e) : action[1])
+            : fstate(action)),
     vnode)  
 }
 
@@ -142,7 +143,7 @@ export var app = ({node, view, init, stateChanged, beforeRender}) => {
       })
     }
   })
-  appState(init)
+  appState( isUndefined(init) ? view.$init : init )
   return appState
 }
 

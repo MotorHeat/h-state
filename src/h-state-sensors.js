@@ -30,9 +30,11 @@ action - this action is called to inject a new value from sensor to the state
 
 */
 
+import { bindToState } from "./h-state"
+import { isFunction, isString } from "./utils"
+
 export function processSensors(getSensors) {
   let activeSensors = new Map() // get(sensorDef) => {props, stop()}
-  //TODO: remove from activeSensors deleted sensors 
   return function (fstate) {
     const state = fstate()
     const sensors = getSensors(state)
@@ -41,7 +43,7 @@ export function processSensors(getSensors) {
       const { sensor, props, isActive, action } = def
       let startedData = activeSensors.get(def)
       if (isActive(state)) {
-        const newProps = typeof(props) === "function" ? props(state) : props
+        const newProps = isFunction(props) ? props(state) : props
         if (startedData) {
           if (startedData.props !== newProps) {
             startedData.stop()
@@ -62,5 +64,60 @@ export function processSensors(getSensors) {
         }
       }
     })
+    Array.from(activeSensors.keys())
+      .filter(k => !sensors.includes(k))
+      .forEach(k => {
+        activeSensors.get(k).stop()
+        activeSensors.delete(k)
+      })
   }
+}
+
+export function mapSensor(def, mp, fstate) {
+  const mapGet = s => isString(mp) ? s[mp] : mp.get(s)
+
+  return {
+    ...def,
+    action: bindToState(def.action, mp, fstate),
+    props: isFunction(def.props)
+      ? s => def.props( mapGet(s) )
+      : def.props,
+
+    isActive: isFunction(def.isActive) 
+      ? s => def.isActive(mapGet(s))
+      : def.isActive,
+
+  }
+}
+
+export function attachSensorsEffect(sensors, mapper, action) {
+  return [attachSensors, {sensors, mapper, action}]
+}
+
+var mappedSensors = new Map()
+
+function attachSensors(fstate, {sensors, mapper, action}) {
+  let mapped = sensors
+    .filter(s => !mappedSensors.get(s))
+    .map(s => {
+      let r = mapSensor(s, mapper, fstate)
+      mappedSensors.set(s, r)
+      return r;
+    });
+  fstate([action, mapped])
+}
+
+export function detachSensorsEffect(sensors, action) {
+  return [detachSensors, {sensors, action}]
+}
+
+function detachSensors(fstate, {sensors, action}) {
+  let mapped = sensors.map(s => {
+      let r = mappedSensors.get(s)
+      mappedSensors.delete(s)
+      return r
+    })
+    .filter(s => !!s)
+
+  fstate([action, mapped])
 }

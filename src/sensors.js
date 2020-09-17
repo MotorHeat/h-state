@@ -11,7 +11,7 @@ export function startTimeIntervalSensor(notify, {interval, payload}) {
   return () => clearInterval(handle)
 }
 
-export const startMouseMoveSensor = (action, isActive) => ({
+export const createMouseMoveSensor = (action, isActive) => ({
   sensor: startEventSensor,
   props: {
     eventName: 'mousemove',
