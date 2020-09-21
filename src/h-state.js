@@ -148,4 +148,4 @@ export var app = ({node, view, init, stateChanged, beforeRender}) => {
   return appState
 }
 
-var defer = isUndefined(requestAnimationFrame) ? setTimeout :  requestAnimationFrame
+var defer = typeof(requestAnimationFrame) === "undefined" ? setTimeout :  requestAnimationFrame
