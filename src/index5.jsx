@@ -1,6 +1,8 @@
+import { logEffect, timeoutEffect } from './effects'
 import { h, app, mount, effect } from './h-state'
 import { processSensors, attachSensorsEffect, detachSensorsEffect} from './h-state-sensors'
 import { MouseCursor, mouseCursorSensors } from './mouseCursor'
+import { Users } from './users'
 
 const counterActions = {
   inc: state => ({...state, counter: state.counter + 1}),
@@ -26,25 +28,6 @@ function Test() {
     <h1>H1 child</h1>
     <p>paragraph</p>
   </div>
-}
-
-function logEffect(message) {
-  return [ (d, m) => console.log(m), message]
-}
-
-function timeoutEffect(interval, action, payload) {
-  return [
-    timeOutEffectRunner,
-    {
-      interval: interval,
-      action: action,
-      payload: payload
-    }
-  ]
-}
-
-function timeOutEffectRunner(fstate, {action, payload, interval}) {
-  setTimeout( () => fstate(action, payload), interval)
 }
 
 Main.$init = {
@@ -108,7 +91,8 @@ function Main(s) {
       <button onclick={mainActions.toggleShow1}>Toggle 1</button>
       { s.show2 && <Counter $mp="c2"/>}
       <button onclick={mainActions.toggleShow2}>Toggle 2</button>
-  
+
+      <Users $mp="users"></Users>
     </div>
 }
 

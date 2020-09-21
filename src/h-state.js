@@ -27,6 +27,33 @@ function applyChange(fstate, setState, change, changePayload) {
       : setState(change)
 }
 
+// [ [action, payload | func ], ...]
+export function batch(actions) {
+
+  async function batchEffect(fstate, payload) {
+    let payloadFunctionArgs = [ payload ]
+    for(let item of actions) {
+      let [action, data, errorAction] = item
+      let p = data;
+      let payLoadIsFunc = isFunction(p);
+      payLoadIsFunc && (p = data(payloadFunctionArgs))
+      
+      if (p instanceof Promise) {
+        try {
+          p = await p
+        } catch(error){
+          if (!isFunction(errorAction)) throw error;
+          p = error
+          action = errorAction
+        }
+      } 
+      payLoadIsFunc && payloadFunctionArgs.push(p)
+      fstate( [action, p] )
+    }
+  }
+  return (state, payload) => [ state, [ batchEffect, payload ] ];
+}
+
 function newState(stateChanged) {
   let state = undefined
   let readOnly = false
@@ -77,7 +104,9 @@ function mapState(parent, mp, init) {
 }
 
 export var mount = (get, set) => ({get, set})
-export var effect = effect => s => [ s, effect ]
+export var effect = effect => s =>{
+  return [ s, effect ]
+}
 
 let currentFState = undefined
 let rootFState = undefined
@@ -104,7 +133,7 @@ export var h = (type, props, ...children) => {
           type,
           props || {},
           [].concat(...children)
-            .filter(c => typeof(c) !== "boolean")
+            .filter(c => typeof(c) !== "boolean" && !isUndefined(c) && c !== null)
             .map(c => isString(c) || typeof c === "number" ? text(c) : c
             )),
       currentFState)
