@@ -30,13 +30,15 @@ function Test() {
   </div>
 }
 
-Main.$init = {
-  counter: 0,
-  show1: true,
-  show2: true,
-  mouse: MouseCursor.$init,
-  sensors: []
-}
+Main.$init = [ {
+    counter: 0,
+    show1: true,
+    show2: true,
+    mouse: MouseCursor.$init,
+    sensors: []
+  },
+  logEffect("Main.$init effect")
+]
 
 const mainActions = {
   toggleShow1: s => ({...s, show1: !s.show1}),

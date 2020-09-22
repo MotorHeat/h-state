@@ -78,12 +78,7 @@ function newState(stateChanged) {
 
 function mapState(parent, mp, init) {
 
-  function getState() {
-    let state = parent(), r;
-    return isString(mp)
-      ? (mp in state) ? state[mp] : init
-      : (r = mp.get(state), isUndefined(r) ? init : r)
-  }
+  const getState = () => isString(mp) ? parent()[mp] : mp.get(parent())
 
   function mapSet(state, value) {
     let r
@@ -92,7 +87,7 @@ function mapState(parent, mp, init) {
       : mp.set(state, value)
   }
 
-  return function mappedState() {
+  function mappedState() {
     return arguments.length == 0 
       ? getState()
       : applyChange(
@@ -101,6 +96,9 @@ function mapState(parent, mp, init) {
           arguments[0],
           arguments[1])
   }
+
+  isUndefined(getState()) && !isUndefined(init) && mappedState(init)
+  return mappedState
 }
 
 export var mount = (get, set) => ({get, set})
