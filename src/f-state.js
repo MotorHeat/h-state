@@ -1,89 +1,101 @@
 import { h as hsf, patch, text } from 'superfine';
-import { isString } from './utils';
 
-export function newState() {
+function applyChange(fstate, setState, change, changePayload) {
+  isFunction(change)
+    ? applyChange(fstate, setState, change(fstate(), changePayload))
+    : isArray(change)
+      ? isFunction(change[0])
+        ? applyChange(fstate, setState, change[0], change[1])
+        : (setState(change[0]),
+           change
+            .slice(1)
+            .forEach(fx => isArray(fx) && isFunction(fx[0]) && fx[0](fstate, fx[1]))
+          )
+      : setState(change)
+}
+
+function newState(listener) {
   let state = undefined;
-  function fstate() {
-    if (arguments.length) {
-      let newState = arguments[0](state, arguments[1]);
-      if (newState !== state) {
-        state = newState;
-        fstate.listeners.forEach(l => l(state));
-      }
-    } else {
-      return state;
-    }
-  }
-
-  fstate.listeners = [];
-  return fstate;
-}
-
-export function listen(fstate, listener) {
-  fstate.listeners.push(listener)
-  return function () {
-    let index = fstate.listeners.indexOf(listener);
-    if (index >= 0) {
-      fstate.listeners.splice(index, 1);
-    }
+  const setState = newState => (newState !== state && (state = newState, listener && listener(state)))
+  return function fstate() {
+    if (arguments.length == 0) return state
+    applyChange(fstate, setState, arguments[0], arguments[1])
   }
 }
 
-export function map(parent, mapperDef, init) {
+function map(parent, mapperDef, init, listener) {
   if (isString(mapperDef)) mapperDef = mapper(mapperDef);
+
+  const setState = newState => newState !== mapperDef.get(parent()) 
+    && (parent(s => mapperDef.set(s, newState)), listener && listener(mapped))
+
   function mapped() {
-    let state = mapperDef.get(parent());
-    if (state === undefined) state = init;
-    if (arguments.length) {
-      let newState = arguments[0](state, arguments[1]);
-      if (newState !== state) {
-        parent(s => mapperDef.set(s, newState));
-        mapped.listeners.forEach(l => l(state));
-      }
-    } else {
-      return state;
+    if (arguments.length == 0) {
+      let state = mapperDef.get(parent());
+      return isUndefined(state)
+        ? (mapped(init), mapped())
+        : state
     }
+    applyChange(mapped, setState, arguments[0], arguments[1])
   }
-  mapped.listeners = [];
   return mapped;
 }
 
-export function mapper(prop) {
-  return {
+const mapper = prop => ({
     get: s => s[prop],
     set: (s, v) => s[prop] === v ? s : (s = {...s}, s[prop]=v, s),
+})
+
+export function sensor({start, params, action, isActive}) {
+  let unsubscribe = null
+  return function (fstate) {
+    if (isActive(fstate())) {
+      if (!unsubscribe) {
+        unsubscribe = start(data => fstate(action, data), params);
+      }
+    } else {
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+    }
   }
 }
-export function app({node, view, init}) {
-  let fstate = newState()
+
+export function app({node, view, init, log}) {
+  let fstate = newState(appListener)
+  let rendering = false
 
   function appListener(state) {
-    currentState.push(fstate)
-    try {
-      let vnode = view(state)
-      patch(node, vnode)
-    } finally {
-      currentState.pop()
+    log && (isArray(log) ? log.forEach(l => l(state)) : log(state))
+    view.$sensors && view.$sensors.forEach(x => x(fstate))
+    if (!rendering) {
+      rendering = true
+      defer( () => {
+        currentState.push(fstate)
+        try {
+          let vnode = view(state)
+          patch(node, vnode)
+        } finally {
+          currentState.pop()
+          rendering = false
+        }
+      });
     }
   }
 
-  listen(fstate, appListener)
-  fstate(() => init || view.$init);
-  return fstate;
+  fstate(init || view.$init);
 }
 
 let currentState = [];
 
 export function h(type, props, ...children) {
   if (isFunction(type)) {
-    if (props && props['$state']) {
-      let state = map(currentState[currentState.length - 1], props['$state'], type['$init']);
+    if (props && props.$state) {
+      let state = map(currentState[currentState.length - 1], props.$state, type.$init, s => type.$sensors && type.$sensors.forEach(x => x(s)));
       currentState.push(state);
-      try {
-        return type(state(), children)
-      } finally {
-        currentState.pop();
-      }
+      try { return type(state(), children) }
+      finally { currentState.pop(); }
     } else {
       return type(props, children)
     }
@@ -94,7 +106,6 @@ export function h(type, props, ...children) {
       .map(c => isString(c) || typeof c === "number" ? text(c) : c)
     ),
     currentState[currentState.length - 1]);
-    
   }
 }
 
@@ -114,3 +125,6 @@ function hookEvents(vnode, fstate) {
 const isArray = Array.isArray
 const isFunction = obj => typeof(obj) === "function"
 const isUndefined = obj => typeof(obj) === "undefined"
+const isString = obj => typeof(obj) === "string"
+
+const defer = typeof(requestAnimationFrame) === "undefined" ? setTimeout :  requestAnimationFrame
