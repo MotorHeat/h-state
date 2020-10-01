@@ -19,7 +19,7 @@ function Counter(state) {
   </div>
 }
 
-Counter.$sensors = [
+Counter.$sensors = () => [
   intervalSensor(
     s => s.counter < 10,
     counterActions.inc,
@@ -90,7 +90,7 @@ function Main(s) {
     </div>
 }
 
-Main.$sensors = [
+Main.$sensors = () => [
   mouseCursorSensor(
     s => s.mouse.active,
     mainActions.setMouseCursor

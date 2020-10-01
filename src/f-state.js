@@ -26,18 +26,17 @@ function newState(listener) {
 function map(parent, mapperDef, init, listener) {
   if (isString(mapperDef)) mapperDef = mapper(mapperDef);
 
-  const setState = newState => newState !== mapperDef.get(parent()) 
-    && (parent(s => mapperDef.set(s, newState)), listener && listener(mapped))
+  const setState = newState => 
+    newState !== mapperDef.get(parent()) 
+      && (parent(s => mapperDef.set(s, newState)), listener && listener(mapped))
 
   function mapped() {
-    if (arguments.length == 0) {
-      let state = mapperDef.get(parent());
-      return isUndefined(state)
-        ? (mapped(init), mapped())
-        : state
-    }
+    if (arguments.length == 0) return mapperDef.get(parent());
     applyChange(mapped, setState, arguments[0], arguments[1])
   }
+
+  isUndefined(mapped()) ? mapped(init) : (listener && listener(mapped))
+  
   return mapped;
 }
 
@@ -65,10 +64,11 @@ export function sensor({start, params, action, isActive}) {
 export function app({node, view, init, log}) {
   let fstate = newState(appListener)
   let rendering = false
-
+  let sensors = view.$sensors && view.$sensors()  
+  
   function appListener(state) {
     log && (isArray(log) ? log.forEach(l => l(state)) : log(state))
-    view.$sensors && view.$sensors.forEach(x => x(fstate))
+    sensors.forEach(x => x(fstate))
     if (!rendering) {
       rendering = true
       defer( () => {
@@ -88,11 +88,32 @@ export function app({node, view, init, log}) {
 }
 
 let currentState = [];
+let mappedStates = new Map();
+
+function getMappedState(type, props) {
+  let current = currentState[currentState.length - 1] 
+  let mapped = mappedStates.get(current)
+  if (!mapped) {
+    mapped = new Map()
+    mappedStates.set(current, mapped)
+  }
+  let result = mapped.get(props.$state)
+  if (!result) {
+    let sensors = type.$sensors && type.$sensors();
+    result = map(current, 
+      props.$state,
+      type.$init,
+      s => sensors && sensors.forEach(x => x(s))
+    );
+    mapped.set(props.$state, result)
+  }
+  return result
+}
 
 export function h(type, props, ...children) {
   if (isFunction(type)) {
     if (props && props.$state) {
-      let state = map(currentState[currentState.length - 1], props.$state, type.$init, s => type.$sensors && type.$sensors.forEach(x => x(s)));
+      let state = getMappedState(type, props)
       currentState.push(state);
       try { return type(state(), children) }
       finally { currentState.pop(); }
