@@ -113,9 +113,9 @@ function getMappedState(type, props) {
 export function h(type, props, ...children) {
   if (isFunction(type)) {
     if (props && props.$state) {
-      let state = getMappedState(type, props)
-      currentState.push(state);
-      try { return type(state(), children) }
+      let mstate = getMappedState(type, props)
+      currentState.push(mstate);
+      try { return type(props ? {...props, ...mstate()} : mstate(), children) }
       finally { currentState.pop(); }
     } else {
       return type(props, children)
