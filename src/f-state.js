@@ -47,37 +47,45 @@ const mapper = prop => ({
 
 export function sensor({start, params, action, isActive}) {
   let unsubscribe = null
+  let disposed = false
+  const stop = () => unsubscribe && (unsubscribe(), unsubscribe = null)
   return function (fstate) {
-    if (isActive(fstate())) {
-      if (!unsubscribe) {
-        unsubscribe = start(data => fstate(action, data), params);
-      }
-    } else {
-      if (unsubscribe) {
-        unsubscribe();
-        unsubscribe = null;
-      }
-    }
+    (!arguments.length || disposed)
+      ? (stop(), disposed = true)
+      : isActive(fstate())
+        ? !unsubscribe && (unsubscribe = start(data => fstate(action, data), params))
+        : stop() 
   }
 }
+
+const cleanupMappedStates = (prevUsedState, usedStates, mappedStates) =>
+  prevUsedState.forEach( ({parent, mp, done}, s) =>
+    !usedStates.get(s) && (
+      (mappedStates.get(parent).get(mp).sensors || []).forEach(x => x()), //dispose all the sensors
+      done && s(done),
+      mappedStates.delete(s),
+      mappedStates.get(parent).delete(mp)
+    ))
 
 export function app({node, view, init, log}) {
   let fstate = newState(appListener)
   let rendering = false
-  let sensors = view.$sensors && view.$sensors()  
-  
+  let sensors = view.$sensors && view.$sensors()
+  const context = createAppContext(fstate)
   function appListener(state) {
     log && (isArray(log) ? log.forEach(l => l(state)) : log(state))
     sensors.forEach(x => x(fstate))
     if (!rendering) {
       rendering = true
       defer( () => {
-        currentState.push(fstate)
+        const prevUsedState = context.usedStates
+        context.usedStates = new Map()
+        appContext = context
         try {
-          let vnode = view(state)
-          patch(node, vnode)
+          patch(node, view(state))
+          cleanupMappedStates(prevUsedState, context.usedStates, context.mappedStates)
         } finally {
-          currentState.pop()
+          appContext = null;
           rendering = false
         }
       });
@@ -87,36 +95,39 @@ export function app({node, view, init, log}) {
   fstate(init || view.$init);
 }
 
-let currentState = [];
-let mappedStates = new Map();
-
+let appContext = null;
+const createAppContext = (rootState) => ({currentState:[rootState], mappedStates: new Map(), usedStates: new Map()})
+const getCurrentState = () => appContext.currentState[appContext.currentState.length - 1]
+const createUsedStateMeta = (parent, mp, done) => ({parent, mp, done})
 function getMappedState(type, props) {
-  let current = currentState[currentState.length - 1] 
-  let mapped = mappedStates.get(current)
+  let current = getCurrentState()
+  let mapped = appContext.mappedStates.get(current)
   if (!mapped) {
     mapped = new Map()
-    mappedStates.set(current, mapped)
+    appContext.mappedStates.set(current, mapped)
   }
-  let result = mapped.get(props.$state)
-  if (!result) {
+  const mappedMeta = mapped.get(props.$state)
+  let mstate = mappedMeta && mappedMeta.mstate || null
+  if (!mstate) {
     let sensors = type.$sensors && type.$sensors();
-    result = map(current, 
+    mstate = map(current, 
       props.$state,
       type.$init,
       s => sensors && sensors.forEach(x => x(s))
     );
-    mapped.set(props.$state, result)
+    mapped.set(props.$state, { mstate, sensors })
   }
-  return result
+  appContext.usedStates.set(mstate, createUsedStateMeta(current, props.$state, props.$done || type.$done))
+  return mstate
 }
 
 export function h(type, props, ...children) {
   if (isFunction(type)) {
     if (props && props.$state) {
       let mstate = getMappedState(type, props)
-      currentState.push(mstate);
+      appContext.currentState.push(mstate);
       try { return type(props ? {...props, ...mstate()} : mstate(), children) }
-      finally { currentState.pop(); }
+      finally { appContext.currentState.pop(); }
     } else {
       return type(props, children)
     }
@@ -126,7 +137,7 @@ export function h(type, props, ...children) {
       .filter(c => typeof(c) !== "boolean" && !isUndefined(c) && c !== null)
       .map(c => isString(c) || typeof c === "number" ? text(c) : c)
     ),
-    currentState[currentState.length - 1]);
+    getCurrentState());
   }
 }
 
