@@ -58,13 +58,13 @@ export function sensor({start, params, action, isActive}) {
   }
 }
 
-const cleanupMappedStates = (prevUsedState, usedStates, mappedStates) =>
+const cleanupMappedStates = (prevUsedState, uStates, mStates) =>
   prevUsedState.forEach( ({parent, mp, done}, s) =>
-    !usedStates.get(s) && (
-      (mappedStates.get(parent).get(mp).sensors || []).forEach(x => x()), //dispose all the sensors
+    !uStates.get(s) && (
+      (mStates.get(parent).get(mp).sensors || []).forEach(x => x()), //dispose all the sensors
       done && s(done),
-      mappedStates.delete(s),
-      mappedStates.get(parent).delete(mp)
+      mStates.delete(s),
+      mStates.get(parent).delete(mp)
     ))
 
 export function app({node, view, init, log}) {
@@ -78,12 +78,12 @@ export function app({node, view, init, log}) {
     if (!rendering) {
       rendering = true
       defer( () => {
-        const prevUsedState = context.usedStates
-        context.usedStates = new Map()
+        const prevUsedState = context.uStates
+        context.uStates = new Map()
         appContext = context
         try {
           patch(node, view(state))
-          cleanupMappedStates(prevUsedState, context.usedStates, context.mappedStates)
+          cleanupMappedStates(prevUsedState, context.uStates, context.mStates)
         } finally {
           appContext = null;
           rendering = false
@@ -96,15 +96,15 @@ export function app({node, view, init, log}) {
 }
 
 let appContext = null;
-const createAppContext = (rootState) => ({currentState:[rootState], mappedStates: new Map(), usedStates: new Map()})
-const getCurrentState = () => appContext.currentState[appContext.currentState.length - 1]
+const createAppContext = (rootState) => ({states: [rootState], mStates: new Map(), uStates: new Map()})
+const getCurrentState = () => appContext.states[appContext.states.length - 1]
 const createUsedStateMeta = (parent, mp, done) => ({parent, mp, done})
 function getMappedState(type, props) {
   let current = getCurrentState()
-  let mapped = appContext.mappedStates.get(current)
+  let mapped = appContext.mStates.get(current)
   if (!mapped) {
     mapped = new Map()
-    appContext.mappedStates.set(current, mapped)
+    appContext.mStates.set(current, mapped)
   }
   const mappedMeta = mapped.get(props.$state)
   let mstate = mappedMeta && mappedMeta.mstate || null
@@ -117,7 +117,7 @@ function getMappedState(type, props) {
     );
     mapped.set(props.$state, { mstate, sensors })
   }
-  appContext.usedStates.set(mstate, createUsedStateMeta(current, props.$state, props.$done || type.$done))
+  appContext.uStates.set(mstate, createUsedStateMeta(current, props.$state, props.$done || type.$done))
   return mstate
 }
 
@@ -125,9 +125,9 @@ export function h(type, props, ...children) {
   if (isFunction(type)) {
     if (props && props.$state) {
       let mstate = getMappedState(type, props)
-      appContext.currentState.push(mstate);
+      appContext.states.push(mstate);
       try { return type(props ? {...props, ...mstate()} : mstate(), children) }
-      finally { appContext.currentState.pop(); }
+      finally { appContext.states.pop(); }
     } else {
       return type(props, children)
     }
