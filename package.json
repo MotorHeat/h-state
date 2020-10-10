@@ -6,8 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "snowpack dev",
-    "bundle": "esbuild --bundle --minify --outfile=bundle.js ./src/h-state.js",
-    "minify": "terser ./src/h-state.js -o h-state.js -mc --module"
+    "bundle": "esbuild --bundle --minify --outfile=bundle.js ./src/f-state.js"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +15,9 @@
     "superfine": "^8.0.10"
   },
   "devDependencies": {
-    "snowpack": "^2.10.1",
-    "terser": "^5.3.3"
+    "eslint": "^7.10.0",
+    "eslint-plugin-jsdoc": "^30.6.4",
+    "eslint-plugin-react": "^7.21.3",
+    "snowpack": "^2.10.1"
   }
 }
