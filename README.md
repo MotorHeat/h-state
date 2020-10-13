@@ -1,4 +1,4 @@
 # h-state
-This project inspired by Hyperapp.
-It introduces same API with possibility to map components to different parts of the state.
+This project is inspired by Hyperapp.
+It introduces similar API with possibility to easily split state by parts and easily introduce independent actions and views.
 Work is in progress, documentation - TBD ...
