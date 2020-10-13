@@ -207,7 +207,7 @@ import { h as hsf, patch, text } from 'superfine';
  /** Well known props.
   * 
   * @typedef WellKnownProps
-  * @property {MapperDef<any, any>} [$state]
+  * @property {MapperDef<any, any>} [$mp]
   * @property {any} [key]
   */
 
@@ -469,18 +469,18 @@ function getMappedState(type, props) {
     mapped = new Map()
     appContext.mStates.set(current, mapped)
   }
-  const mappedMeta = mapped.get(props.$state)
+  const mappedMeta = mapped.get(props.$mp)
   let mstate = mappedMeta && mappedMeta.mstate || null
   if (!mstate) {
     let sensors = type.$sensors && type.$sensors();
     mstate = map(current, 
-      props.$state,
+      props.$mp,
       type.$init,
       s => sensors && sensors.forEach(x => x(s))
     );
-    mapped.set(props.$state, { mstate, sensors })
+    mapped.set(props.$mp, { mstate, sensors })
   }
-  appContext.uStates.set(mstate, createUsedStateMeta(current, props.$state, props.$done || type.$done))
+  appContext.uStates.set(mstate, createUsedStateMeta(current, props.$mp, props.$done || type.$done))
   return mstate
 }
 
@@ -494,7 +494,7 @@ function getMappedState(type, props) {
  */
 export function h(type, props, ...children) {
   if (isFunction(type)) {
-    if (props && props.$state) {
+    if (props && props.$mp) {
       // @ts-ignore
       let mstate = getMappedState(type, props)
       appContext.states.push(mstate);

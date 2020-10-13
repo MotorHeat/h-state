@@ -176,7 +176,7 @@ interface ViewFunction<S> {
 }
 
 interface FstateProps<S> {
-  $state?: MapperDef<any, any>
+  $mp?: MapperDef<any, any>
   $done?: Change<any>
 }
 
@@ -187,24 +187,24 @@ function getMappedState<S>(type: ViewFunction<S>, props: FstateProps<S>): IState
     mapped = new Map()
     appContext.mStates.set(current, mapped)
   }
-  const mappedMeta = mapped.get(props.$state)
+  const mappedMeta = mapped.get(props.$mp)
   let mstate = mappedMeta && mappedMeta.mstate || null
   if (!mstate) {
     let sensors = type.$sensors && type.$sensors();
     mstate = map<any, S>(current, 
-      props.$state,
+      props.$mp,
       type.$init,
       s => sensors && sensors.forEach(x => x(s))
     );
-    mapped.set(props.$state, { mstate, sensors })
+    mapped.set(props.$mp, { mstate, sensors })
   }
-  appContext.uStates.set(mstate, createUsedStateMeta(current, props.$state, props.$done || type.$done))
+  appContext.uStates.set(mstate, createUsedStateMeta(current, props.$mp, props.$done || type.$done))
   return mstate
 }
 
 export function h(type: string | ViewFunction<any>, props: {} & FstateProps<any>, ...children: VNode[]): VNode {
   if (isFunction(type)) {
-    if (props && props.$state) {
+    if (props && props.$mp) {
       let mstate = getMappedState(type as ViewFunction<any>, props)
       appContext.states.push(mstate);
       try { return (type as ViewFunction<any>)(props ? {...props, ...mstate()} : mstate(), children) }

@@ -10,19 +10,7 @@ import { logEffect } from "./effects"
 
 const usersActions = {
   setUsers: (s, d) => ({...s, data: d}),
-  /**
-   * @param {UsersState} s
-   * @param {boolean} v
-   * @return {UsersState}
-   */
   setLoading: (s, v) => ({...s, loading: v}),
-  /** Sets error value.
-   * 
-   * @param {UsersState} s -
-   * @param {Error | string} v - 
-   * @return {import('./h-state').StateWithEffects<UsersState>} -
-   */
-  // @ts-ignore
   setError: (s, v) => [ {...s, error: v && v.message || v}, logEffect("setError")],
   deleteUser: (s, id) => ({...s, data: s.data.filter(x => x.id !== id)}),
 }
@@ -35,6 +23,15 @@ const usersActionsWithEffects = {
   setUsers: (s, v) => ({...s, loading: false, data: v}),
   setError: (s, v) => [ {...s, loading: false, error: v && v.message || v}, logEffect("setError") ],
 }
+
+const loadUsersEffect = (ok, err) => [ loadUsersEffectRunner, {ok, err} ]
+
+function loadUsersEffectRunner(fstate, {ok, err}) {
+  loadUsersAsync()
+    .then(data => fstate([ok, data]))
+    .catch(e => fstate([err, e]))
+}
+
 
 const loadUsersBatch = batch( [
   [ usersActions.setLoading, true ],
@@ -55,19 +52,20 @@ Users.$init = [ {
 const deleteUserBatch = batch([
   [ usersActions.setLoading, true ],
   [ usersActions.setError, null ],
-  [ usersActions.deleteUser, async ([id]) => (await deleteUserAsync(id),id), usersActions.setError ],
+  [ usersActions.deleteUser, async ([id]) => (await deleteUserAsync(id), id), usersActions.setError ],
   [ usersActions.setLoading, false ],
 ])
 
 export function Users(state) {
   return <div>
+    <button disabled={state.loading} onclick={loadUsersBatch}>Load users</button>
+    <button disabled={state.loading} onclick={usersActionsWithEffects.loadUsers}>Load users (effects)</button>
+    {state.data.length > 0 && <button disabled={state.loading} onclick={[deleteUserBatch, state.data[state.data.length - 1].id]}>Dlete last user</button>}
+
     {state.error && <p>{state.error}</p>}
     {!state.error && <ul>
       {state.data.map(User)}
     </ul> }
-    <button disabled={state.loading} onclick={loadUsersBatch}>Load users</button>
-    <button disabled={state.loading} onclick={usersActionsWithEffects.loadUsers}>Load users (effects)</button>
-    {state.data.length > 0 && <button disabled={state.loading} onclick={[deleteUserBatch, state.data[state.data.length - 1].id]}>Dlete last user</button>}
   </div>
 }
 
@@ -82,14 +80,6 @@ function User({name, email, age}) {
 
 function initUsersEffect(fstate) {
   fstate([ loadUsersBatch ])
-}
-
-const loadUsersEffect = (ok, err) => [ loadUsersEffectRunner, {ok, err} ]
-
-function loadUsersEffectRunner(fstate, {ok, err}) {
-  loadUsersAsync()
-    .then(data => fstate([ok, data]))
-    .catch(e => fstate([err, e]))
 }
 
 async function loadUsersAsync() {

@@ -52,22 +52,21 @@ const mpCounter1 = mount( s => s.c1, mainActions.injectCounter1 );
 
 function Main(s) {
     return <div>
-      <MouseCursor $state="mouse"></MouseCursor>
+      <MouseCursor $mp="mouse"></MouseCursor>
       <h3>Counter is: {s.counter}</h3>
       <button onclick={mainActions.toggleShow1WithDelay}>Toggle 1 with delay</button>
 
-      { s.show1 && <Counter $state={mpCounter1} $init={({name: "FIRST", counter: 0})} />}
+      { s.show1 && <Counter $mp={mpCounter1} $init={({name: "FIRST", counter: 0})} />}
       <button onclick={mainActions.toggleShow1}>Toggle 1</button>
-      { s.show2 && <Counter $state="c2"/>}
+      { s.show2 && <Counter $mp="c2"/>}
       <button onclick={mainActions.toggleShow2}>Toggle 2</button>
 
-      <Users $state="users"></Users>
+      <Users $mp="users"></Users>
     </div>
 }
 
 app( {
   node: document.getElementById("app"),
   view: Main,
-  // init: startState,
   log: console.log,
 })
