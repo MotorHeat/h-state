@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "snowpack dev",
-    "bundle": "esbuild --bundle --minify --outfile=bundle.js ./src/f-state.js"
+    "bundle": "esbuild --bundle --minify --outfile=bundle.js ./src/h-state.js"
   },
   "keywords": [],
   "author": "",

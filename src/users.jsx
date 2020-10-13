@@ -1,10 +1,28 @@
-import { h } from './h-state'
-import { logEffect, timeoutEffect } from "./effects"
-import { batch, effect } from "./h-state"
+import { h, batch } from './h-state'
+import { logEffect } from "./effects"
+
+/**
+ * @typedef UsersState
+ * @property {any[]} data
+ * @property {string | Error} error
+ * @property {boolean} loading
+ */
 
 const usersActions = {
   setUsers: (s, d) => ({...s, data: d}),
+  /**
+   * @param {UsersState} s
+   * @param {boolean} v
+   * @return {UsersState}
+   */
   setLoading: (s, v) => ({...s, loading: v}),
+  /** Sets error value.
+   * 
+   * @param {UsersState} s -
+   * @param {Error | string} v - 
+   * @return {import('./h-state').StateWithEffects<UsersState>} -
+   */
+  // @ts-ignore
   setError: (s, v) => [ {...s, error: v && v.message || v}, logEffect("setError")],
   deleteUser: (s, id) => ({...s, data: s.data.filter(x => x.id !== id)}),
 }

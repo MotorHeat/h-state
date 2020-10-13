@@ -17,6 +17,7 @@ module.exports = {
         "jsdoc"
     ],
     "rules": {
+        "no-unused-vars": 0,
         "jsdoc/check-alignment": 1, // Recommended
         "jsdoc/check-examples": 1,
         "jsdoc/check-indentation": 1,

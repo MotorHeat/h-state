@@ -1,5 +1,5 @@
 import { h } from './h-state'
-import { createMouseMoveSensor } from './sensors'
+import { mouseCursorSensor } from './sensors'
 
 const logEffectRunner = (d, m) => {
   console.log(...m)
@@ -16,7 +16,8 @@ const mouseCursorActions = {
   setCursor: (s, v) => [ 
     {...s, cursor: v}, 
     logEffect('mouseCursor component set cursor effect', "arg 2")
-  ]
+  ],
+  setCursorFromSensor: (s, v) => mouseCursorActions.setCursor(s, {x: v.clientX, y: v.clientY}),
 }
 
 export function MouseCursor({watch, cursor}) {
@@ -33,6 +34,9 @@ MouseCursor.$init = {
   cursor: { x: 0, y: 0 },
 }
 
-export const mouseCursorSensors = [
-  createMouseMoveSensor(mouseCursorActions.setCursor, s => s.watch )
+MouseCursor.$sensors = () => [
+  mouseCursorSensor(
+    s => s.watch,
+    mouseCursorActions.setCursorFromSensor
+  )
 ]

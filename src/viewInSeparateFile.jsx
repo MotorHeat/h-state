@@ -1,4 +1,5 @@
-import { h } from './f-state'
+// eslint-disable-next-line no-unused-vars
+import { h } from './h-state'
 
 Main.$init = {
   counter: 200,
@@ -17,4 +18,4 @@ export function Main(state) {
 }
 
 
-Main.$done = s => undefined
+Main.$done = () => undefined
