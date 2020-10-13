@@ -143,9 +143,8 @@ function hookEvents(vnode, fstate) {
     : (Object.keys(vnode.props)
     .filter(p => p.startsWith("on"))
     .map(p => [vnode.props[p], p])
-    .forEach(([action, p]) => 
-        vnode.props[p] = (e) => 
-          isArray(action)
+    .forEach(([action, p]) => vnode.props[p] = (e) => 
+          isArray(action) && isFunction(action[0])
             ? fstate(action[0], isFunction(action[1]) ? action[1](e) : action[1])
             : fstate(action)),
     vnode)  

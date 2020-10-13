@@ -46,7 +46,27 @@ const counterActions = /**
 }
 
 /**
- * @param {{ key: any; removing: number; name: any; counter: any; }} state
+ * 
+ * @template S
+ * @typedef {import('./f-state').Props<S>} Props 
+ */
+/**
+ * 
+ * @typedef {import('./f-state').VNode} VNode
+ */
+
+/** Counter state.
+ * 
+ * @typedef CounterState
+ * @property {number} [removing]
+ * @property {any} [name]
+ * @property {any} [counter]
+ */
+
+/** Counter component.
+ * 
+ * @param {Props<CounterState>} state
+ * @return {VNode}
  */
 function Counter(state) {
   return <div key={state.key} class={state.removing == removingStart ? "fade-out" : "fade-in"}>

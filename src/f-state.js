@@ -211,6 +211,12 @@ import { h as hsf, patch, text } from 'superfine';
  * @typedef { WellKnownProps & ViewFunctionMeta<S>} ViewFunctionOptionalProps
  */
 
+ /** View function props.
+  * 
+  * @template S
+  * @typedef {S & ViewFunctionOptionalProps<S>} Props<S>
+  */
+
 /** Applies changes to the functional state. Used internally.
  * 
  * @template S
@@ -457,7 +463,7 @@ function hookEvents(vnode, fstate) {
     .filter(p => p.startsWith("on"))
     .map(p => [vnode.props[p], p])
     .forEach(([action, p]) => vnode.props[p] = (e) => 
-      isArray(action) 
+      isArray(action) && isFunction(action[0])
         ? fstate(action[0], isFunction(action[1]) ? action[1](e) : action[1])
         : fstate(action, e)),
       vnode)
