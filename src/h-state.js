@@ -376,7 +376,7 @@ export function app({node, view, init, log}) {
         context.uStates = new Map()
         appContext = context
         try {
-          patch(node, view(state))
+          patch(node, view(fstate()))
           cleanupMappedStates(prevUsedState, context.uStates, context.mStates)
         } finally {
           appContext = null;
