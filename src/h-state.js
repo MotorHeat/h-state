@@ -475,7 +475,7 @@ function getMappedState(type, props) {
     let sensors = type.$sensors && type.$sensors();
     mstate = map(current, 
       props.$mp,
-      type.$init,
+      props.$init || type.$init,
       s => sensors && sensors.forEach(x => x(s))
     );
     mapped.set(props.$mp, { mstate, sensors })
