@@ -4,10 +4,7 @@
   "description": "",
   "main": "./src/index.js",
   "files": [
-    "./src/h-state.js",
-    "./src/effects.js",
-    "./src/sensors.js",
-    "./src/utils.js"
+    "./src/*"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
