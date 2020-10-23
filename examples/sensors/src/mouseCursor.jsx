@@ -1,5 +1,4 @@
-import { h } from './h-state'
-import { mouseCursorSensor } from './sensors'
+import { h, mouseCursorSensor } from 'h-state'
 
 const logEffectRunner = (d, m) => {
   console.log(...m)

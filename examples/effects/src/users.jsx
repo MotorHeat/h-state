@@ -1,5 +1,4 @@
-import { h, batch } from './h-state'
-import { logEffect } from "./effects"
+import { h, batch, logEffect } from 'h-state'
 
 /**
  * @typedef UsersState
@@ -60,7 +59,7 @@ export function Users(state) {
   return <div>
     <button disabled={state.loading} onclick={loadUsersBatch}>Load users</button>
     <button disabled={state.loading} onclick={usersActionsWithEffects.loadUsers}>Load users (effects)</button>
-    {state.data.length > 0 && <button disabled={state.loading} onclick={[deleteUserBatch, state.data[state.data.length - 1].id]}>Dlete last user</button>}
+    {state.data.length > 0 && <button disabled={state.loading} onclick={[deleteUserBatch, state.data[state.data.length - 1].id]}>Delete last user</button>}
 
     {state.error && <p>{state.error}</p>}
     {!state.error && <ul>

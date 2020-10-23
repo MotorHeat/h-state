@@ -9,7 +9,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "snowpack dev",
-    "bundle": "esbuild --bundle --minify --outfile=dist/index.js ./src/index.js"
+    "bundle": "esbuild --bundle --minify --outfile=dist/index.js ./src/index.js",
+    "demo:sensor": ""
   },
   "keywords": [],
   "author": "",

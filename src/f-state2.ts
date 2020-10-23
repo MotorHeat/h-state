@@ -132,7 +132,7 @@ export function app<S>({node, view, init, log}: AppParams<S>) {
         context.uStates = new Map()
         appContext = context
         try {
-          patch(node, view(state))
+          patch(node, view(fstate()))
           cleanupMappedStates(prevUsedState, context.uStates, context.mStates)
         } finally {
           appContext = null;
@@ -193,7 +193,7 @@ function getMappedState<S>(type: ViewFunction<S>, props: FstateProps<S>): IState
     let sensors = type.$sensors && type.$sensors();
     mstate = map<any, S>(current, 
       props.$mp,
-      type.$init,
+      props.$init || type.$init,
       s => sensors && sensors.forEach(x => x(s))
     );
     mapped.set(props.$mp, { mstate, sensors })
