@@ -12,8 +12,5 @@
   "license": "ISC",
   "dependencies": {
     "h-state": "git+https://github.com/MotorHeat/h-state.git"
-  },
-  "devDependencies": {
-    "snowpack": "^2.15.1"
   }
 }

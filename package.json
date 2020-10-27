@@ -10,7 +10,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "snowpack dev",
     "bundle": "esbuild --bundle --minify --outfile=dist/index.js ./src/index.js",
-    "demo:sensor": ""
+    "demo:sensor": "cd ./examples/sensors && npm i && npm start",
+    "demo:effects": "cd ./examples/effects && npm i && npm start",
+    "demo:components": "cd ./examples/components && npm i && npm start"
   },
   "keywords": [],
   "author": "",
