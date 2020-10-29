@@ -1,4 +1,4 @@
-import { h, batch, logEffect } from 'h-state'
+import { h, batch, logEffect, statefull } from 'h-state'
 
 /**
  * @typedef UsersState
@@ -40,7 +40,8 @@ const loadUsersBatch = batch( [
   [ usersActions.setLoading, false ],
 ]);
 
-Users.$init = [ {
+/** @type {import('../../components/web_modules/h-state').Change<UsersState>} */
+const usersInit = [ {
     data: [],
     loading: false,
     error: null,
@@ -55,8 +56,10 @@ const deleteUserBatch = batch([
   [ usersActions.setLoading, false ],
 ])
 
-export function Users(state) {
-  return <div>
+export const Users = statefull( {
+    init: usersInit,
+  },
+  (state) => <div>
     <button disabled={state.loading} onclick={loadUsersBatch}>Load users</button>
     <button disabled={state.loading} onclick={usersActionsWithEffects.loadUsers}>Load users (effects)</button>
     {state.data.length > 0 && <button disabled={state.loading} onclick={[deleteUserBatch, state.data[state.data.length - 1].id]}>Delete last user</button>}
@@ -66,7 +69,7 @@ export function Users(state) {
       {state.data.map(User)}
     </ul> }
   </div>
-}
+)
 
 function User({name, email, age}) {
   return <li>

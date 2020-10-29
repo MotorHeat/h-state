@@ -5,12 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "snowpack dev --config ../../snowpack.config.json"
+    "start": "snowpack --reload && snowpack dev --config ../../snowpack.config.json"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "h-state": "git+https://github.com/MotorHeat/h-state.git"
+    "h-state": "../../"
   }
 }

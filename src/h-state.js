@@ -137,16 +137,6 @@ import { h as hsf, patch, text } from 'superfine';
  * @typedef {() => void} StopSensorFunc
  */
 
-/** Application entry parameters.
- * 
- * @template S
- * @typedef AppParams
- * @property {Element} node
- * @property {View<S>} view
- * @property {Change<S>} [init]
- * @property {((state: S) => void) | (((state: S) => void)[])} [log]
- */
-
  /** View function.
   * 
   * @template S
@@ -156,21 +146,6 @@ import { h as hsf, patch, text } from 'superfine';
   * @return {VNode}
   * 
   */
-
-/** View function custom properties.
- * 
- * @template S
- * @typedef ViewFunctionMeta
- * @property {Change<S>} [$init] - If parent state has "undefined" for the component state then this value witll be injected instead.
- * @property {Change<S>} [$done] - When child component's state is disposed then this change will be inserted to it. Be carefull with effects here.
- * @property {() => Sensor<S>[]} [$sensors] - This function is called when component state is attached for the first time. It should return array of Sensors that will be bounded to a component's state.
- */
-
-/** View.
- * 
- * @template S
- * @typedef {ViewFunction<S> & ViewFunctionMeta<S>} View
- */
 
 /** VNode interface.
  *
@@ -209,17 +184,6 @@ import { h as hsf, patch, text } from 'superfine';
   * @typedef WellKnownProps
   * @property {MapperDef<any, any>} [$mp]
   * @property {any} [key]
-  */
-
-/** FState props
- * @template S
- * @typedef { WellKnownProps & ViewFunctionMeta<S>} ViewFunctionOptionalProps
- */
-
- /** View function props.
-  * 
-  * @template S
-  * @typedef {S & ViewFunctionOptionalProps<S>} Props<S>
   */
 
 /** Applies changes to the functional state. Used internally.
@@ -354,21 +318,35 @@ const cleanupMappedStates = (prevUsedState, uStates, mStates) =>
       mStates.get(parent).delete(mp)
     ))
 
+
+/** Application entry parameters.
+ * 
+ * @template S
+ * @typedef AppParams
+ * @property {Element} node
+ * @property {ViewFunction<StatefulProps<S>>} view
+ * @property {((state: S) => void) | (((state: S) => void)[])} [log]
+ */
+
+ /**
+  * @template S
+  * @typedef AppState
+  * @property {S} [main]
+  */
+
 /** Application entry point. It creates application state and calls rendering each time state is changed.
  * 
  * @template S
  * @param {AppParams<S>} params - Application parameters.
  * @return {void}
  */
-export function app({node, view, init, log}) {
+export function app({node, view, log}) {
   let fstate = newState(appListener)
   let rendering = false
-  let sensors = view.$sensors && view.$sensors()
   const context = createAppContext(fstate)
-  /** @param {S} state */
+  /** @param {AppState<S>} state */
   function appListener(state) {
-    log && (isArray(log) ? log.forEach(l => l(state)) : log(state))
-    sensors && sensors.forEach(x => x(fstate))
+    log && (isArray(log) ? log.forEach(l => l(state.main)) : log(state.main))
     if (!rendering) {
       rendering = true
       defer( () => {
@@ -376,7 +354,7 @@ export function app({node, view, init, log}) {
         context.uStates = new Map()
         appContext = context
         try {
-          patch(node, view(fstate()))
+          patch(node, h(view, {mp: 'main'}))
           cleanupMappedStates(prevUsedState, context.uStates, context.mStates)
         } finally {
           appContext = null;
@@ -385,8 +363,7 @@ export function app({node, view, init, log}) {
       });
     }
   }
-
-  fstate(init || view.$init);
+  fstate({});
 }
 
 /** Action in a batch
@@ -458,60 +435,56 @@ const createUsedStateMeta = (parent, mp, done) => ({parent, mp, done})
 /** Returns mapped state for a view.
  * 
  * @template C
- * @param {View<C>} type 
- * @param {ViewFunctionOptionalProps<C>} props 
+ * @param {MapperDef<any, any>} mp
+ * @param {Change<C>} [init]
+ * @param {Change<C>} [done]
+ * @param {() => Sensor<C>[]} [sensorsFactory]
  * @return {FState<C>}
  */
-function getMappedState(type, props) {
+function getMappedState(mp, init, done, sensorsFactory) {
   let current = getCurrentState()
   let mapped = appContext.mStates.get(current)
   if (!mapped) {
     mapped = new Map()
     appContext.mStates.set(current, mapped)
   }
-  const mappedMeta = mapped.get(props.$mp)
+  const mappedMeta = mapped.get(mp)
   let mstate = mappedMeta && mappedMeta.mstate || null
   if (!mstate) {
-    let sensors = type.$sensors && type.$sensors();
+    let sensors = sensorsFactory && sensorsFactory()
     mstate = map(current, 
-      props.$mp,
-      props.$init || type.$init,
+      mp,
+      init,
       s => sensors && sensors.forEach(x => x(s))
     );
-    mapped.set(props.$mp, { mstate, sensors })
+    mapped.set(mp, { mstate, sensors })
   }
-  appContext.uStates.set(mstate, createUsedStateMeta(current, props.$mp, props.$done || type.$done))
+  appContext.uStates.set(mstate, createUsedStateMeta(current, mp, done))
   return mstate
 }
 
 /** Creates virtual node.
  * 
  * @template S
- * @param {string | View<S>} type 
- * @param {ViewFunctionOptionalProps<S>} props 
+ * @param {string | ViewFunction<S>} type 
+ * @param {any} props 
  * @param  {...any} children 
  * @return {VNode}
  */
 export function h(type, props, ...children) {
   if (isFunction(type)) {
-    if (props && props.$mp) {
-      // @ts-ignore
-      let mstate = getMappedState(type, props)
-      appContext.states.push(mstate);
-      // @ts-ignore
-      try { return type(props ? {...props, ...mstate()} : mstate(), children) }
-      finally { appContext.states.pop(); }
-    } else {
       // @ts-ignore
       return type(props, children)
-    }
   } else {
-    return hookEvents(hsf(type, props || {} , 
-      [].concat( ...children)
-      .filter(c => typeof(c) !== "boolean" && !isUndefined(c) && c !== null)
-      .map(c => isString(c) || typeof c === "number" ? text(c) : c)
-    ),
-    getCurrentState());
+    return hookEvents(
+      hsf( type,
+        props || {},
+        [].concat(...children)
+        .filter(c => typeof(c) !== "boolean" && !isUndefined(c) && c !== null)
+        .map(c => isString(c) || typeof c === "number" ? text(c) : c)
+      ),
+      getCurrentState()
+    );
   }
 }
 
@@ -541,3 +514,53 @@ const isUndefined = obj => typeof(obj) === "undefined"
 const isString = obj => typeof(obj) === "string"
 
 const defer = typeof(requestAnimationFrame) === "undefined" ? setTimeout :  requestAnimationFrame
+
+
+ /** Properties of the stateful view function.
+  * 
+  * @template S
+  * @typedef StatefulProps
+  * @property {MapperDef<any, S>} mp
+  * @property {any} [key]
+  */
+
+/** Stateful view function metadata.
+ * 
+ * @template S
+ * @typedef StatefulMetadata
+ * @property {Change<S>} [init] - If parent state has "undefined" for the component state then this value witll be injected instead.
+ * @property {Change<S>} [done] - When child component's state is disposed then this change will be inserted to it. Be carefull with effects here.
+ * @property {() => Sensor<S>[]} [sensors] - This function is called when component state is attached for the first time. It should return array of Sensors that will be bounded to a component's state.
+ */
+
+
+/**
+ * Creates statefull view function.
+ * 
+ * @template S
+ * @param {StatefulMetadata<S>} metadata
+ * @param {ViewFunction<S>} view
+ * @return {ViewFunction<StatefulProps<S>>}
+ */
+export function statefull({init, done, sensors}, view) {
+
+  /**
+   * Stateful view function.
+   * 
+   * @param {StatefulProps<S>} props
+   * @param {VNode[]} children
+   * @return {VNode}
+   */
+  function component(props, children) {
+    const fstate = getMappedState(props.mp, init, done, sensors)
+    appContext.states.push(fstate);
+    try {
+      return view(props.key ? {...props, ...fstate()} : fstate(), children)
+    }
+    finally {
+      appContext.states.pop();
+    }
+  }
+
+  return component;
+}

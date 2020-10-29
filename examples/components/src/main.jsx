@@ -1,5 +1,5 @@
-import { h, timeoutEffect, logEffect, mount } from 'h-state'
-import { Counter } from './counter'
+import { h, timeoutEffect, logEffect, mount, statefull } from 'h-state'
+import { Counter, counterInit } from './counter'
 
 const mainActions = {
   toggleShow1: s => ({...s, show1: !s.show1}),
@@ -13,20 +13,21 @@ const mainActions = {
 
 const mpCounter1 = mount( s => s.c1, mainActions.injectCounter1 );
 
+const mainInit = {
+  show1: true,
+  show2: true,
+  c2: {...counterInit, name: "'second counter'"}
+}
 
-export function Main(s) {
-  return <div>
+export const Main = statefull( {
+    init: mainInit,
+  },
+  s => <div>
     <button onclick={mainActions.toggleShow1WithDelay}>Show/hide counter 1 with delay</button>
     <button onclick={mainActions.toggleShow1}>Show/hide counter 1</button>
     <button onclick={mainActions.toggleShow2}>Show/hide counter 2</button>
 
-    { s.show1 && <Counter $mp={mpCounter1} $init={({...Counter.$init, name: "FIRST", counter: 0})} />}
-    { s.show2 && <Counter $mp="c2"/>}
+    { s.show1 && <Counter mp={mpCounter1}/>}
+    { s.show2 && <Counter mp="c2"/>}
   </div>
-}
-
-Main.$init = {
-  show1: true,
-  show2: true,
-  c2: {...Counter.$init, name: "'second counter'"}
-}
+)

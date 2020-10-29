@@ -1,16 +1,19 @@
-import { h } from 'h-state'
+import { h, statefull } from 'h-state'
 
-import { MouseCursor } from "./mouseCursor"
+import { MouseCursor, mouseCursorInit } from "./mouseCursor"
 
-export function Main() {
-  return <div>
+const mainInit = {
+  mouse1: mouseCursorInit,
+}
+
+export const Main = statefull( {
+    init: mainInit,
+  },
+  () => <div>
     <h1>This is example of how to create and to embed components that uses sensors</h1>
     <h2>Click the "watch" button to toggle sensor state</h2>
-    <MouseCursor $mp="mouse1"></MouseCursor>
-    <MouseCursor $mp="mouse2"></MouseCursor>
+    <MouseCursor mp="mouse1"></MouseCursor>
+    <MouseCursor mp="mouse2"></MouseCursor>
   </div>
-}
+)
 
-Main.$init = {
-  mouse1: MouseCursor.$init,
-}

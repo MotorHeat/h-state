@@ -1,4 +1,4 @@
-import { h, mouseCursorSensor } from 'h-state'
+import { h, mouseCursorSensor, statefull } from 'h-state'
 
 const logEffectRunner = (d, m) => {
   console.log(...m)
@@ -19,23 +19,24 @@ const mouseCursorActions = {
   setCursorFromSensor: (s, v) => mouseCursorActions.setCursor(s, {x: v.clientX, y: v.clientY}),
 }
 
-export function MouseCursor({watch, cursor}) {
-  return <div>
-    <p>Active: {watch ? "yes" : "no"}</p>
-    <p>{`Mouse X: ${cursor.x} Y: ${cursor.y}`}</p>
-    <button onclick={mouseCursorActions.toggleWatch}>watch</button>
-  </div>
-}
-
-MouseCursor.$init = {
+export const mouseCursorInit = {
   logCounter: 0,
   watch: false,
   cursor: { x: 0, y: 0 },
 }
 
-MouseCursor.$sensors = () => [
-  mouseCursorSensor(
-    s => s.watch,
-    mouseCursorActions.setCursorFromSensor
-  )
-]
+export const MouseCursor = statefull( {
+  init: mouseCursorInit,
+  sensors: () => [
+    mouseCursorSensor(
+      s => s.watch,
+      mouseCursorActions.setCursorFromSensor
+    )
+  ]
+},
+  ({watch, cursor}) => <div>
+    <p>Active: {watch ? "yes" : "no"}</p>
+    <p>{`Mouse X: ${cursor.x} Y: ${cursor.y}`}</p>
+    <button onclick={mouseCursorActions.toggleWatch}>watch</button>
+  </div>
+)
