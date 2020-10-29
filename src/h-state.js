@@ -4,27 +4,14 @@ import { h as hsf, patch, text } from 'superfine';
  * Functional state.
  * 
  * @template S
- * @typedef { ReadState<S> & SetState<S> } FState
+ * @typedef { (() => S) & ((change: Change<S>) => void) & (<P>(action: ActionWithPayload<S, P>, payload: P) => void) } FState
  */
 
 /**
  * @template S
- * @typedef { () => S } ReadState
- */
-
-/**
- * @template S
- * @typedef { ((change: Change<S>) => void) & (CallActionWithPayload<S>)} SetState
- */
-
-/** 
- * @template S
- * @typedef {<P>(action: ActionWithPayload<S, P>, payload: P) => void} CallActionWithPayload
- */
-
-/**
- * @template S
- * @typedef { S | SimpleAction<S> | ([ActionWithPayload<S, any>, any]) } Change
+ * @typedef { StateOrStateWithEffects<S> 
+ * | SimpleAction<S>
+ * | [ ActionWithPayload<S, any>, any ] } Change
  */
 
 /**
@@ -39,8 +26,22 @@ import { h as hsf, patch, text } from 'superfine';
   * 
   * @template S
   * @template P
-  * @typedef {(state: S, payload: P) => S} ActionWithPayload
+  * @typedef {(state: S, payload: P) => StateOrStateWithEffects<S>} ActionWithPayload
   */
+
+/** 
+  * StateOrStateWithEffects.
+  * 
+  * @template S
+  * @typedef { S | StateWithEffects<S> } StateOrStateWithEffects
+  */
+
+/**
+ * State with effects.
+ * 
+ * @template S
+ * @typedef { [ S, ...(EffectDef<S>[]) ] } StateWithEffects
+ */
 
 /**
  * Effect Function.
@@ -60,21 +61,7 @@ import { h as hsf, patch, text } from 'superfine';
   * @typedef {([EffectFunction<S, any>, any] | [ EffectFunction<S, any> ])} EffectDef
   */
 
-/**
- * State with effects.
- * 
- * @template S
- * @typedef { [ S, ...EffectDef<S>[] ] } StateWithEffects
- */
-
- /** 
-  * StateOrStateWithEffects.
-  * 
-  * @template S
-  * @typedef { S | StateWithEffects<S> } StateOrStateWithEffects
-  */
-
- /**
+  /**
   * Listener is called each time state has changed. The new state is passed as an argument.
   * 
   * @template S
@@ -369,18 +356,20 @@ export function app({node, view, log}) {
 /** Action in a batch
  * 
  * @template S
- * @template P
- * @typedef { ( [ ActionWithPayload<S, P>, P]
-    | [ ActionWithPayload<S, P>, (arg0?: [P, ...any[]]) => Promise<P> ]
-    | [ ActionWithPayload<S, P>, (arg0?: [P, ...any[]]) => Promise<P>, ActionWithPayload<S, any> ]) } ActionInBatch
+ * @typedef { ( 
+    [ SimpleAction<S> ]
+    | [ ActionWithPayload<S, any>, any]
+    | [ ActionWithPayload<S, any>, (args: Array<any>) => Promise<any>]
+    | [ ActionWithPayload<S, any>, (args: Array<any>) => Promise<any>, ActionWithPayload<S, Error>]
+    ) } ActionInBatch
  */
  
   /** Creates a single acctions from the series of actions that can have Promise as a payload.
  * 
  * @template S
  * @template P
- * @param {[ActionInBatch<S, P>, ...ActionInBatch<S, any>[]]} actions
- * @return {CallActionWithPayload<S>} - Action with payload.
+ * @param {ActionInBatch<S>[]} actions
+ * @return {ActionWithPayload<S, P>} - Action with payload.
  */
 export function batch(actions) {
   /** Batch effect.
@@ -467,7 +456,7 @@ function getMappedState(mp, init, done, sensorsFactory) {
  * 
  * @template S
  * @param {string | ViewFunction<S>} type 
- * @param {any} props 
+ * @param {S} props 
  * @param  {...any} children 
  * @return {VNode}
  */
