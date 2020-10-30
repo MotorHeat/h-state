@@ -10,9 +10,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "snowpack dev",
     "bundle": "esbuild --bundle --minify --outfile=dist/index.js ./src/index.js",
-    "demo:sensors": "cd ./examples/sensors && npm i && npm start",
-    "demo:effects": "cd ./examples/effects && npm i && npm start",
-    "demo:components": "cd ./examples/components && npm i && npm start"
+    "demo:sensors": "snowpack dev --config ./examples/sensors/snowpack.config.json",
+    "demo:effects": "snowpack dev --config ./examples/effects/snowpack.config.json",
+    "demo:components": "snowpack dev --config ./examples/components/snowpack.config.json",
+    "demo:routes": "snowpack dev --config ./examples/routes/snowpack.config.json"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +25,6 @@
     "eslint": "^7.10.0",
     "eslint-plugin-jsdoc": "^30.6.4",
     "eslint-plugin-react": "^7.21.3",
-    "snowpack": "^2.10.1"
+    "snowpack": "^2.15.1"
   }
 }

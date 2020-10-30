@@ -1,4 +1,4 @@
-import { h, timeoutEffect, logEffect, mount, statefull } from 'h-state'
+import { h, timeoutEffect, logEffect, mount, statefull } from '../../../src'
 import { Counter, counterInit } from './counter'
 
 const mainActions = {

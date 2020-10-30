@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "build:ts": "esbuild --loader=ts --sourcemap=inline --sourcefile=$FILE",
+    "build:js": "esbuild --loader=js --sourcemap=inline --sourcefile=$FILE",
+    "build:tsx": "esbuild --jsx-factory=h --jsx-fragment=h --loader=tsx --sourcemap=inline --sourcefile=$FILE",
+    "build:jsx": "esbuild --jsx-factory=h --jsx-fragment=h --loader=jsx --sourcemap=inline --sourcefile=$FILE"
+  },
+  "mount": {
+    "examples/routes/public": "/",
+    "examples/routes/src": "/",
+    "src": "/src"
+  }
+}

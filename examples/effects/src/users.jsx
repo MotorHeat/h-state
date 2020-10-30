@@ -1,4 +1,4 @@
-import { h, batch, logEffect, statefull } from 'h-state'
+import { h, batch, logEffect, statefull } from '../../../src'
 
 /**
  * @typedef UsersState

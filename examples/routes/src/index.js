@@ -1,4 +1,4 @@
-import { app } from '../../../src'
+import { app } from "../../../src";
 import { Main } from './main'
 
 app( {

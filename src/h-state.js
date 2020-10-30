@@ -166,13 +166,6 @@ import { h as hsf, patch, text } from 'superfine';
  * @property {Map<FState<any>, IUsedStateMeta>} uStates
  */
 
- /** Well known props.
-  * 
-  * @typedef WellKnownProps
-  * @property {MapperDef<any, any>} [$mp]
-  * @property {any} [key]
-  */
-
 /** Applies changes to the functional state. Used internally.
  * 
  * @template S
@@ -424,14 +417,15 @@ const createUsedStateMeta = (parent, mp, done) => ({parent, mp, done})
 /** Returns mapped state for a view.
  * 
  * @template C
+ * @param {number | undefined} level
  * @param {MapperDef<any, any>} mp
  * @param {Change<C>} [init]
  * @param {Change<C>} [done]
  * @param {() => Sensor<C>[]} [sensorsFactory]
  * @return {FState<C>}
  */
-function getMappedState(mp, init, done, sensorsFactory) {
-  let current = getCurrentState()
+function getMappedState(level, mp, init, done, sensorsFactory) {
+  let current = isUndefined(level) ? getCurrentState() : appContext.states[level + 1]
   let mapped = appContext.mStates.get(current)
   if (!mapped) {
     mapped = new Map()
@@ -510,6 +504,7 @@ const defer = typeof(requestAnimationFrame) === "undefined" ? setTimeout :  requ
   * @template S
   * @typedef StatefulProps
   * @property {MapperDef<any, S>} mp
+  * @property {number} [level]
   * @property {any} [key]
   */
 
@@ -541,7 +536,7 @@ export function statefull({init, done, sensors}, view) {
    * @return {VNode}
    */
   function component(props, children) {
-    const fstate = getMappedState(props.mp, init, done, sensors)
+    const fstate = getMappedState(props.level, props.mp, init, done, sensors)
     appContext.states.push(fstate);
     try {
       return view(props.key ? {...props, ...fstate()} : fstate(), children)

@@ -1,4 +1,4 @@
-import { h, batch, logEffect, statefull, Change, StateWithEffects, FState } from 'h-state'
+import { h, batch, logEffect, statefull, Change, StateWithEffects, FState } from '../../../src'
 
 interface UsersState {
   data: any[]

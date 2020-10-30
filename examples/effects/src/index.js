@@ -1,4 +1,4 @@
-import { app } from 'h-state'
+import { app } from '../../../src'
 import { Users } from './users'
 
 app( {

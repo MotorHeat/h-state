@@ -1,4 +1,4 @@
-import { h, statefull } from 'h-state'
+import { h, statefull } from '../../../src'
 
 import { MouseCursor, mouseCursorInit } from "./mouseCursor"
 

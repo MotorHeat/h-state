@@ -1,4 +1,4 @@
-import { h, sensor, statefull } from 'h-state'
+import { h, sensor, statefull } from '../../../src'
 
 const counterActions = {
   inc: state => ({...state, counter: state.counter + 1}),

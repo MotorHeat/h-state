@@ -34,8 +34,9 @@ export interface IMapper<P, C> {
 export type MapperDef<P,C> = string | IMapper<P, C>
 
 export interface StatefulProps<S> {
-  mp: MapperDef<any, S>;
+  mp: MapperDef<any, S>
   key?: any
+  level?: number
 }
   
 export type StopSensorFunc = () => void;
