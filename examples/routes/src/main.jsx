@@ -1,5 +1,4 @@
-import { h, statefull, Router } from "../../../src";
-import { appRoutes } from "./routes";
+import { h, statefull, Router, setGlobalEffect } from "../../../src";
 
 function main() {
   return <div>
@@ -9,14 +8,6 @@ function main() {
 }
 
 export const Main = statefull( {
-  init: {
-    router: {
-      currentPath: window.location.pathname,
-      routes: appRoutes,
-    },
-    greeting: {
-      name: "H-State",
-    }
-  }
-},
-main)
+  init: {}  
+  },
+  main)

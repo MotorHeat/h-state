@@ -1,4 +1,4 @@
-import { h, statefull, sensor } from './h-state'
+import { h, statefull, sensor, setGlobalEffect, getGlobalSensor } from './h-state'
 /**
  * Route path.
  *
@@ -15,25 +15,50 @@ import { h, statefull, sensor } from './h-state'
  * @typedef RouterState
  * @property {string} currentPath
  * @property {RoutePath<any>[]} routes
+ * @property {RoutePath<any>} current
  */
 
 /**
  * Router view.
  * 
- * @param {RouterState} state 
- * @return {import('./h-state').VNode}
+ * @param {RouterState} state -
+ * @return {import('./h-state').VNode} -
  */
-function routerView(state) {
-  // TODO: implement smart route parsing
-  const route = state.routes.find(x => x.path === state.currentPath)
-  return route && h(route.view, {mp: route.mp, level: 0})
+const routerView = state => {
+  return state.current && h(state.current.view, {mp: state.current.mp})
 }
 
-const routerActions = {
-  setCurrentPath: (state, path) => ({...state, currentPath: path}),
-  historyPushState: (/** @type {any} */ state, /** @type {string} */ newLocation) => [
-    state,
-    [ historyPushStateEffect, newLocation ]
+/** 
+ * Executes effect to change current route. Can be called on top of any state. Current state does't changed.
+ * 
+ * @param {any} state -
+ * @param {string} newLocation -
+ * @return {import('./h-state').Change<any>} -
+ */
+const historyPushState = (state, newLocation) => [
+  state,
+  [ historyPushStateEffect, newLocation ]
+]
+
+/**
+ * 
+ * @typedef ActiveRoute
+ * @property {string} path
+ */
+
+/**
+ * Sets current path and calculates current view according to routes.
+ * 
+ * @param {RouterState} state -
+ * @param {string} path -
+ * @return {import('./h-state').StateWithEffects<RouterState>} -
+ */
+function setCurrentRouterPathAction(state, path) {
+  // TODO: implement smart route parsing
+  const route = state.routes.find(x => x.path === path)
+  return [
+    {...state, currentPath: path, current: route},
+    [ setGlobalEffect, {name: "activeRoute", value: {path: path}} ]
   ]
 }
 
@@ -57,7 +82,7 @@ function historyPushStateEffect(fstate, location) {
  * @param {(path: string) => void} callback - A function that will be called each time sensor produce a new value.
  * @return {import('./h-state').StopSensorFunc} - Function to stop sensor.
  */
-function startRouterSensor(callback) {
+function startPopStateSensor(callback) {
   const doRouterEvent = () => callback(window.location.pathname)
   window.addEventListener('popstate', doRouterEvent)
   window.addEventListener(routerEvent, doRouterEvent)
@@ -69,15 +94,17 @@ function startRouterSensor(callback) {
 
 export const Router = statefull( {
     init: {
-      currentPath: '',
+      currentPath: window.location.pathname,
       routes: [],
+      current: null,
     },
     sensors: () => [
       sensor({
-        start: startRouterSensor,
+        start: startPopStateSensor,
         isActive: () => true,
-        action: routerActions.setCurrentPath,
-      })
+        action: setCurrentRouterPathAction,
+      }),
+      getGlobalSensor('routes', (s, v) => setCurrentRouterPathAction({...s, routes: v}, s.currentPath))
     ],
   },
   routerView
@@ -87,7 +114,7 @@ export function RouteLink({ to }, children) {
   return h("a", {
       _target: 'blank',
       href: to,
-      onclick: [routerActions.historyPushState, e => { e.preventDefault(); e.stopPropagation(); return to }]
+      onclick: [historyPushState, e => (e.preventDefault(),e.stopPropagation(),to)]
     },
     children)
 }

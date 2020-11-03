@@ -12,5 +12,15 @@ export const appRoutes = [
     mp: "step1",
     path: "/step1",
     view: Step1,
+  },
+  {
+    mp: "step1",
+    path: "/step2",
+    view: Step1,
+  },
+  {
+    mp: "step1",
+    path: "/step3",
+    view: Step1,
   }
 ]

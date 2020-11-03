@@ -2,14 +2,15 @@
   "name": "h-state",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.esm.js",
   "files": [
     "src/*.js"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "snowpack dev",
-    "bundle": "esbuild --bundle --minify --outfile=dist/index.js ./src/index.js",
+    "bundle": "esbuild --bundle --format=esm --outfile=dist/index.esm.js ./src/index.js && esbuild --bundle --minify --format=cjs --outfile=dist/index.js ./src/index.js",
     "demo:sensors": "snowpack dev --config ./examples/sensors/snowpack.config.json",
     "demo:effects": "snowpack dev --config ./examples/effects/snowpack.config.json",
     "demo:components": "snowpack dev --config ./examples/components/snowpack.config.json",

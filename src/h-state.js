@@ -106,7 +106,7 @@ import { h as hsf, patch, text } from 'superfine';
  * @template D
  * @template P
  * @typedef ISensorDef
- * @property {StartSensorFunc<D, P>} start - Start sensor function.  
+ * @property {StartSensorFunc<S, D, P>} start - Start sensor function.  
  * @property {P} [params]
  * @property {ActionWithPayload<S, D>} action
  * @property {(state: S) => boolean} isActive
@@ -114,9 +114,10 @@ import { h as hsf, patch, text } from 'superfine';
 
 /** Start sensor function. Once called this function should call "callback" on each sensor event.
  * 
+ * @template S
  * @template D
  * @template P
- * @typedef {(callback: (data: D) => void, params: P) => StopSensorFunc} StartSensorFunc
+ * @typedef {(callback: (data: D) => void, params: P, fstate: FState<S>) => StopSensorFunc} StartSensorFunc
  */
 
 /** Stop sensor function.
@@ -233,9 +234,9 @@ function map(parent, mapperDef, init, listener) {
     if (arguments.length == 0) return mp.get(parent());
     applyChange(mapped, setState, change, payload)
   }
+  mapped.parent = parent
 
   isUndefined(mapped()) ? mapped(init) : (listener && listener(mapped))
-  
   return mapped;
 }
 
@@ -270,13 +271,14 @@ export const mount = (get, set) => ({get, set})
  */
 export function sensor({start, params, action, isActive}) {
   let unsubscribe = null
+  let isStarted = false
   let disposed = false
-  const stop = () => unsubscribe && (unsubscribe(), unsubscribe = null)
+  const stop = () => unsubscribe && (unsubscribe(), unsubscribe = null, isStarted = false)
   return function (fstate) {
     (!arguments.length || disposed)
       ? (stop(), disposed = true)
       : isActive(fstate())
-        ? !unsubscribe && (unsubscribe = start(data => fstate(action, data), params))
+        ? !isStarted && (isStarted = true, unsubscribe = start(data => fstate(action, data), params, fstate))
         : stop() 
   }
 }
@@ -306,12 +308,14 @@ const cleanupMappedStates = (prevUsedState, uStates, mStates) =>
  * @property {Element} node
  * @property {ViewFunction<StatefulProps<S>>} view
  * @property {((state: S) => void) | (((state: S) => void)[])} [log]
+ * @property {object} [global]
  */
 
  /**
   * @template S
   * @typedef AppState
-  * @property {S} [main]
+  * @property {S | undefined} main
+  * @property {Globals} global
   */
 
 /** Application entry point. It creates application state and calls rendering each time state is changed.
@@ -320,7 +324,7 @@ const cleanupMappedStates = (prevUsedState, uStates, mStates) =>
  * @param {AppParams<S>} params - Application parameters.
  * @return {void}
  */
-export function app({node, view, log}) {
+export function app({node, view, log, global}) {
   let fstate = newState(appListener)
   let rendering = false
   const context = createAppContext(fstate)
@@ -343,7 +347,10 @@ export function app({node, view, log}) {
       });
     }
   }
-  fstate({});
+  /** @type {Map<string, GlobalData>} */
+  const g = new Map()
+  global && Object.keys(global).forEach(x => g.set(x, {data: global[x], listeners: new Set()}))
+  fstate({global: g, main: undefined});
 }
 
 /** Action in a batch
@@ -417,15 +424,14 @@ const createUsedStateMeta = (parent, mp, done) => ({parent, mp, done})
 /** Returns mapped state for a view.
  * 
  * @template C
- * @param {number | undefined} level
- * @param {MapperDef<any, any>} mp
+ * @param {MapperDef<any, C>} mp
  * @param {Change<C>} [init]
  * @param {Change<C>} [done]
  * @param {() => Sensor<C>[]} [sensorsFactory]
  * @return {FState<C>}
  */
-function getMappedState(level, mp, init, done, sensorsFactory) {
-  let current = isUndefined(level) ? getCurrentState() : appContext.states[level + 1]
+function getMappedState(mp, init, done, sensorsFactory) {
+  let current = getCurrentState()
   let mapped = appContext.mStates.get(current)
   if (!mapped) {
     mapped = new Map()
@@ -434,11 +440,14 @@ function getMappedState(level, mp, init, done, sensorsFactory) {
   const mappedMeta = mapped.get(mp)
   let mstate = mappedMeta && mappedMeta.mstate || null
   if (!mstate) {
-    let sensors = sensorsFactory && sensorsFactory()
+    let sensors = null
     mstate = map(current, 
       mp,
       init,
-      s => sensors && sensors.forEach(x => x(s))
+      s => { 
+        if (!sensors && sensorsFactory) sensors = sensorsFactory()
+        sensors && sensors.forEach(x => x(s))
+      }
     );
     mapped.set(mp, { mstate, sensors })
   }
@@ -504,30 +513,32 @@ const defer = typeof(requestAnimationFrame) === "undefined" ? setTimeout :  requ
   * @template S
   * @typedef StatefulProps
   * @property {MapperDef<any, S>} mp
-  * @property {number} [level]
   * @property {any} [key]
   */
+
+/**
+ * @typedef ActivePath
+ * @property {string} path
+ */
 
 /** Stateful view function metadata.
  * 
  * @template S
- * @typedef StatefulMetadata
+ * @typedef StatefullMetadata
  * @property {Change<S>} [init] - If parent state has "undefined" for the component state then this value witll be injected instead.
  * @property {Change<S>} [done] - When child component's state is disposed then this change will be inserted to it. Be carefull with effects here.
  * @property {() => Sensor<S>[]} [sensors] - This function is called when component state is attached for the first time. It should return array of Sensors that will be bounded to a component's state.
  */
 
-
 /**
  * Creates statefull view function.
  * 
  * @template S
- * @param {StatefulMetadata<S>} metadata
+ * @param {StatefullMetadata<S>} metadata
  * @param {ViewFunction<S>} view
  * @return {ViewFunction<StatefulProps<S>>}
  */
-export function statefull({init, done, sensors}, view) {
-
+export function statefull(metadata, view) {
   /**
    * Stateful view function.
    * 
@@ -536,15 +547,104 @@ export function statefull({init, done, sensors}, view) {
    * @return {VNode}
    */
   function component(props, children) {
-    const fstate = getMappedState(props.level, props.mp, init, done, sensors)
+    const fstate = getMappedState(props.mp, metadata.init, metadata.done, metadata.sensors)
     appContext.states.push(fstate);
     try {
-      return view(props.key ? {...props, ...fstate()} : fstate(), children)
+      return view(props.key ? {key: props.key, ...fstate()} : fstate(), children)
     }
     finally {
       appContext.states.pop();
     }
   }
-
   return component;
+}
+
+
+/**
+ * Global data with listeners.
+ * 
+ * @typedef GlobalData
+ * @property {any} data
+ * @property {Set<(data: any) => void>} listeners 
+ */
+
+/**
+ * Globals.
+ * 
+ * @typedef {Map<string, GlobalData>} Globals
+ */
+
+/**
+ * Evaluates application root state.
+ * 
+ * @param {FState<any>} fstate -
+ * @return {FState<AppState<any>>} -
+ */
+// @ts-ignore
+const getRootState = fstate => fstate.parent ? getRootState(fstate.parent) : fstate
+
+/**
+ * Sets global value.
+ * 
+ * @template T
+ * @param {FState<any>} fstate -
+ * @param {{name: string, value: T}} params -
+ * @return {void}
+ */
+export function setGlobalEffect(fstate, params) {
+  const rootState = getRootState(fstate)
+  /** @type {AppState<any>} */
+  const appState = rootState()
+  let val = appState.global.get(params.name)
+  if (!val) {
+    val = {
+      data: params.value,
+      listeners: new Set(),
+    }
+    appState.global.set(params.name, val)
+  } else {
+    if(val.data === params.value) return
+    val.data = params.value
+  }
+  rootState(({...appState}))
+  Array.from(val.listeners.values).forEach(l => l(params.name, params.value))
+}
+
+/**
+ * Creates sensor that will listen to global data.
+ * 
+ * @template S
+ * @template T
+ * @param {string} name -
+ * @param {ActionWithPayload<S, T>} action -
+ * @return {Sensor<S>} -
+ */
+export function getGlobalSensor(name, action) {
+  return sensor({
+    action: action,
+    isActive: () => true,
+    params: {name},
+    start: startGlobalSensor
+  })
+}
+
+/**
+ * Start listening to a global value.
+ * 
+ * @param {(data: any) => void} callback -
+ * @param {{name: string}} params -
+ * @param {FState<any>} fstate -
+ * @return {StopSensorFunc} -
+ */
+function startGlobalSensor(callback, {name}, fstate) {
+  const appState = getRootState(fstate)()
+  let val = appState.global.get(name)
+  if (val) {
+    val.listeners.add(callback)
+    callback(val.data)
+  } else {
+    val = { data: undefined, listeners: new Set([callback]) }
+    appState.global.set(name, val)
+  }
+  return () => val.listeners.delete(callback)
 }
