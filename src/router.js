@@ -58,7 +58,7 @@ function setCurrentRouterPathAction(state, path) {
   const route = state.routes.find(x => x.path === path)
   return [
     {...state, currentPath: path, current: route},
-    [ setGlobalEffect, {name: "activeRoute", value: {path: path}} ]
+    setGlobalEffect("activeRoute", {path: path})
   ]
 }
 

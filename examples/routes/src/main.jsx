@@ -1,4 +1,4 @@
-import { h, statefull, Router, setGlobalEffect } from "../../../src";
+import { h, statefull, Router } from "../../../src";
 
 function main() {
   return <div>

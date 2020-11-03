@@ -583,6 +583,18 @@ export function statefull(metadata, view) {
 // @ts-ignore
 const getRootState = fstate => fstate.parent ? getRootState(fstate.parent) : fstate
 
+
+/**
+ * Sets global value.
+ * 
+ * @template S
+ * @template T
+ * @param {string} name -
+ * @param {T} value -
+ * @return {EffectDef<S>} -
+ */
+export const setGlobalEffect = (name, value) => [setGlobalEffectFunction, {name, value}]
+
 /**
  * Sets global value.
  * 
@@ -591,7 +603,7 @@ const getRootState = fstate => fstate.parent ? getRootState(fstate.parent) : fst
  * @param {{name: string, value: T}} params -
  * @return {void}
  */
-export function setGlobalEffect(fstate, params) {
+function setGlobalEffectFunction(fstate, params) {
   const rootState = getRootState(fstate)
   /** @type {AppState<any>} */
   const appState = rootState()
