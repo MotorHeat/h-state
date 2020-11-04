@@ -4,7 +4,10 @@ import { h as hsf, patch, text } from 'superfine';
  * Functional state.
  * 
  * @template S
- * @typedef { (() => S) & ((change: Change<S>) => void) & (<P>(action: ActionWithPayload<S, P>, payload: P) => void) } FState
+ * @typedef { (() => S) 
+ *    & ((change: Change<S>) => void) 
+ *    & (<P>(action: ActionWithPayload<S, P>, payload: P) => void)
+ *    & {parent?: FState<any>} } FState
  */
 
 /**
@@ -580,8 +583,7 @@ export function statefull(metadata, view) {
  * @param {FState<any>} fstate -
  * @return {FState<AppState<any>>} -
  */
-// @ts-ignore
-const getRootState = fstate => fstate.parent ? getRootState(fstate.parent) : fstate
+export const getRootState = fstate => fstate.parent ? getRootState(fstate.parent) : fstate
 
 
 /**
@@ -593,7 +595,7 @@ const getRootState = fstate => fstate.parent ? getRootState(fstate.parent) : fst
  * @param {T} value -
  * @return {EffectDef<S>} -
  */
-export const setGlobalEffect = (name, value) => [setGlobalEffectFunction, {name, value}]
+export const setGlobal = (name, value) => [setGlobalEffect, {name, value}]
 
 /**
  * Sets global value.
@@ -603,7 +605,7 @@ export const setGlobalEffect = (name, value) => [setGlobalEffectFunction, {name,
  * @param {{name: string, value: T}} params -
  * @return {void}
  */
-function setGlobalEffectFunction(fstate, params) {
+export function setGlobalEffect(fstate, params) {
   const rootState = getRootState(fstate)
   /** @type {AppState<any>} */
   const appState = rootState()
@@ -618,8 +620,7 @@ function setGlobalEffectFunction(fstate, params) {
     if(val.data === params.value) return
     val.data = params.value
   }
-  rootState(({...appState}))
-  Array.from(val.listeners.values).forEach(l => l(params.name, params.value))
+  Array.from(val.listeners).forEach(l => l(params.value))
 }
 
 /**
@@ -631,12 +632,12 @@ function setGlobalEffectFunction(fstate, params) {
  * @param {ActionWithPayload<S, T>} action -
  * @return {Sensor<S>} -
  */
-export function getGlobalSensor(name, action) {
+export function inject(name, action) {
   return sensor({
     action: action,
     isActive: () => true,
     params: {name},
-    start: startGlobalSensor
+    start: startInject
   })
 }
 
@@ -648,7 +649,7 @@ export function getGlobalSensor(name, action) {
  * @param {FState<any>} fstate -
  * @return {StopSensorFunc} -
  */
-function startGlobalSensor(callback, {name}, fstate) {
+function startInject(callback, {name}, fstate) {
   const appState = getRootState(fstate)()
   let val = appState.global.get(name)
   if (val) {

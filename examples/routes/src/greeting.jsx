@@ -1,7 +1,7 @@
-import { h, statefull, RouteLink, getGlobalSensor } from "../../../src";
+import { h, statefull, RouteLink, inject } from "../../../src";
 
 /**
- * GreetingState
+ * GreetingState.
  * 
  * @typedef {object} GreetingState
  * @property {string} name
@@ -14,7 +14,7 @@ export const Greeting = statefull({
     activeRoute: '',
   },
   sensors: () => [
-    getGlobalSensor('activeRoute', injectActiveRoute)
+    inject('activeRoute', injectActiveRoute)    
   ]
   
 }, ({name, activeRoute}, childred) => <div>
@@ -39,6 +39,4 @@ export const Greeting = statefull({
  * @param {import("src").ActiveRoute} activeRoute -
  * @return {GreetingState} -
  */
-function injectActiveRoute(state, activeRoute) {
-  return ({...state, activeRoute: activeRoute.path})
-}
+const injectActiveRoute = (state, activeRoute) => ({...state, activeRoute: activeRoute.path})

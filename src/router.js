@@ -1,4 +1,4 @@
-import { h, statefull, sensor, setGlobalEffect, getGlobalSensor } from './h-state'
+import { h, statefull, sensor, setGlobal, inject } from './h-state'
 /**
  * Route path.
  *
@@ -58,7 +58,7 @@ function setCurrentRouterPathAction(state, path) {
   const route = state.routes.find(x => x.path === path)
   return [
     {...state, currentPath: path, current: route},
-    setGlobalEffect("activeRoute", {path: path})
+    setGlobal("activeRoute", {path}),
   ]
 }
 
@@ -104,7 +104,7 @@ export const Router = statefull( {
         isActive: () => true,
         action: setCurrentRouterPathAction,
       }),
-      getGlobalSensor('routes', (s, v) => setCurrentRouterPathAction({...s, routes: v}, s.currentPath))
+      inject('routes', (s, v) => setCurrentRouterPathAction({...s, routes: v}, s.currentPath))
     ],
   },
   routerView
