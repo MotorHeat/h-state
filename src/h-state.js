@@ -105,9 +105,9 @@ import { h as hsf, patch, text } from 'superfine';
 
 /** Sensor defintion structure.
  * 
- * @template S
- * @template D
- * @template P
+ * @template S - Type of the state expected by action
+ * @template D - Type of data that is produced by sensor
+ * @template P - Type of data structure that is used to configure sensor when it starts
  * @typedef ISensorDef
  * @property {StartSensorFunc<S, D, P>} start - Start sensor function.  
  * @property {P} [params]
@@ -117,9 +117,9 @@ import { h as hsf, patch, text } from 'superfine';
 
 /** Start sensor function. Once called this function should call "callback" on each sensor event.
  * 
- * @template S
- * @template D
- * @template P
+ * @template S - Type of the state expected by action
+ * @template D - Type of data that is produced by sensor
+ * @template P - Type of data structure that is used to configure sensor when it starts
  * @typedef {(callback: (data: D) => void, params: P, fstate: FState<S>) => StopSensorFunc} StartSensorFunc
  */
 

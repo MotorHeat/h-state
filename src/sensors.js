@@ -13,17 +13,6 @@ export function startTimeIntervalSensor(notify, {interval, payload}) {
   return () => clearInterval(handle)
 }
 
-// TODO: delete this function
-export const createMouseMoveSensor = (action, isActive) => ({
-  sensor: startEventSensor,
-  props: {
-    eventName: 'mousemove',
-    toPayload: e => ({x: e.clientX, y: e.clientY})
-  },
-  isActive: isActive, 
-  action: action, 
-})
-
 /** Creates mouse cursor sensor.
  * 
  * @template S
@@ -48,4 +37,32 @@ function startMouseCursorSensor(callback) {
   const listener = e => callback(e)  
   window.addEventListener("mousemove", listener)
   return () => window.removeEventListener("mousemove", listener)
+}
+
+/** Interval sensor.
+ * 
+ * @template S
+ * @param { number } interval - action will be called with this interval.
+ * @param {(s: S) => boolean} isActive - This function should return true when sensor should be active.
+ * @param {(s: S, e: number) => S} action - This action is called each time timer produce a new value.
+ * @return {import('./h-state').Sensor<S>} - A new sensor.
+ */
+ export function intervalSensor(interval, isActive, action) {
+  return sensor({
+    start: startIntervalSensor,
+    action,
+    params: interval,
+    isActive
+  })
+}
+
+/** Starts interval sensor.
+ * 
+ * @param {(interval: number) => void} callback - A function that will be called each time sensor produce a new value.
+ * @param { number } interval - Interval at which call back is called.
+ * @return {import('./h-state').StopSensorFunc} - Function to stop sensor.
+ */
+function startIntervalSensor(callback, interval) {
+  const id = setInterval(() => callback(interval), interval); 
+  return () => clearInterval(id);
 }

@@ -14,7 +14,8 @@
     "demo:sensors": "snowpack dev --config ./examples/sensors/snowpack.config.json",
     "demo:effects": "snowpack dev --config ./examples/effects/snowpack.config.json",
     "demo:components": "snowpack dev --config ./examples/components/snowpack.config.json",
-    "demo:routes": "snowpack dev --config ./examples/routes/snowpack.config.json"
+    "demo:routes": "snowpack dev --config ./examples/routes/snowpack.config.json",
+    "demo:anim": "snowpack dev --config ./examples/animations/snowpack.config.json"
   },
   "keywords": [],
   "author": "",

@@ -40,7 +40,7 @@ const loadUsersBatch = batch( [
   [ usersActions.setLoading, false ],
 ]);
 
-/** @type {import('../../components/web_modules/h-state').Change<UsersState>} */
+/** @type {import('../../../src/h-state').Change<UsersState>} */
 const usersInit = [ {
     data: [],
     loading: false,

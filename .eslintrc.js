@@ -30,18 +30,18 @@ module.exports = {
         "jsdoc/newline-after-description": 1, // Recommended
         "jsdoc/no-types": 0,
         "jsdoc/no-undefined-types": 1, // Recommended
-        "jsdoc/require-description": 1,
+        "jsdoc/require-description": 0,
         "jsdoc/require-description-complete-sentence": 1,
         "jsdoc/require-example": 0,
         "jsdoc/require-hyphen-before-param-description": 1,
         "jsdoc/require-jsdoc": 0, // Recommended
         "jsdoc/require-param": 1, // Recommended
-        "jsdoc/require-param-description": 1, // Recommended
+        "jsdoc/require-param-description": 0, // Recommended
         "jsdoc/require-param-name": 1, // Recommended
         "jsdoc/require-param-type": 1, // Recommended
         "jsdoc/require-returns": 1, // Recommended
         "jsdoc/require-returns-check": 1, // Recommended
-        "jsdoc/require-returns-description": 1, // Recommended
+        "jsdoc/require-returns-description": 0, // Recommended
         "jsdoc/require-returns-type": 1, // Recommended
         "jsdoc/valid-types": 1 // Recommended        
     },
